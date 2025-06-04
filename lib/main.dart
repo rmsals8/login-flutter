@@ -1,7 +1,10 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:app_links/app_links.dart';
+import 'dart:io';
 import 'core/utils/storage_helper.dart';
 import 'data/services/api_service.dart';
 import 'core/constants/app_colors.dart';
@@ -16,10 +19,33 @@ import 'presentation/screens/social_login_callback_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // 🔥 강력한 SSL 검증 완전 무시
+  HttpOverrides.global = DevHttpOverrides();
+  
   // 필수 서비스 초기화
   await _initializeServices();
   
   runApp(const MyApp());
+}
+
+// 🔥 개발용 HTTP 오버라이드 (모든 SSL 무시)
+class DevHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    final client = super.createHttpClient(context);
+    
+    // 🔥 모든 SSL 인증서 무시
+    client.badCertificateCallback = (X509Certificate cert, String host, int port) {
+      print('🔓 SSL 인증서 무시: $host:$port');
+      return true; // 모든 인증서 허용
+    };
+    
+    // 🔥 타임아웃 설정
+    client.connectionTimeout = const Duration(seconds: 30);
+    client.idleTimeout = const Duration(seconds: 30);
+    
+    return client;
+  }
 }
 
 Future<void> _initializeServices() async {
@@ -41,8 +67,84 @@ Future<void> _initializeServices() async {
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late AppLinks _appLinks;
+  GoRouter? _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  // 🔥 Deep Link 초기화 (수정된 버전)
+  void _initDeepLinks() {
+    if (kIsWeb) {
+      print('🌐 웹 환경: Deep Link 초기화 스킵');
+      return;
+    }
+    
+    print('📱 모바일 환경: Deep Link 초기화 시작');
+    _appLinks = AppLinks();
+    
+    // 🔥 수정: getInitialAppLink() 사용
+    _appLinks.getInitialAppLink().then((Uri? uri) {
+      if (uri != null) {
+        print('🔗 초기 Deep Link: $uri');
+        _handleDeepLink(uri);
+      }
+    }).catchError((error) {
+      print('❌ 초기 Deep Link 오류: $error');
+    });
+    
+    // 🔥 수정: allUriLinkStream 사용
+    _appLinks.allUriLinkStream.listen((Uri uri) {
+      print('🔗 실시간 Deep Link: $uri');
+      _handleDeepLink(uri);
+    }, onError: (error) {
+      print('❌ Deep Link 스트림 오류: $error');
+    });
+  }
+
+  // 🔥 Deep Link 처리
+  void _handleDeepLink(Uri uri) {
+    print('🔄 Deep Link 처리 시작: $uri');
+    print('  - scheme: ${uri.scheme}');
+    print('  - path: ${uri.path}');
+    print('  - queryParameters: ${uri.queryParameters}');
+    
+    // com.example.login://auth/callback?token=...&userId=... 형태
+    if (uri.scheme == 'com.example.login' && uri.path == '/auth/callback') {
+      final queryParams = uri.queryParameters;
+      print('📦 Deep Link 파라미터: $queryParams');
+      
+      if (_router != null) {
+        // 소셜 로그인 콜백 화면으로 이동
+        print('🚀 콜백 화면으로 이동 시작');
+        _router!.go('/auth/callback', extra: queryParams);
+      } else {
+        print('⚠️ Router가 아직 초기화되지 않음');
+        // 잠시 후 다시 시도
+        Future.delayed(const Duration(milliseconds: 1000), () {
+          if (_router != null) {
+            print('🔄 Router 초기화 후 재시도');
+            _router!.go('/auth/callback', extra: queryParams);
+          } else {
+            print('❌ Router가 여전히 null');
+          }
+        });
+      }
+    } else {
+      print('❌ 예상하지 못한 Deep Link 형태: ${uri.toString()}');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,43 +155,46 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CaptchaProvider()),
       ],
       child: Builder(
-        builder: (context) => MaterialApp.router(
-          title: 'Flutter Login App',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            primarySwatch: Colors.green,
-            primaryColor: AppColors.primary,
-            scaffoldBackgroundColor: AppColors.background,
-            appBarTheme: const AppBarTheme(
-              backgroundColor: AppColors.white,
-              foregroundColor: AppColors.textPrimary,
-              elevation: 0,
-              centerTitle: true,
-            ),
-            elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
+        builder: (context) {
+          _router = _createRouter(context);
+          return MaterialApp.router(
+            title: 'Flutter Login App',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              primarySwatch: Colors.green,
+              primaryColor: AppColors.primary,
+              scaffoldBackgroundColor: AppColors.background,
+              appBarTheme: const AppBarTheme(
+                backgroundColor: AppColors.white,
+                foregroundColor: AppColors.textPrimary,
+                elevation: 0,
+                centerTitle: true,
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
               ),
-            ),
-            inputDecorationTheme: InputDecorationTheme(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-                borderSide: const BorderSide(color: AppColors.inputBorder),
+              inputDecorationTheme: InputDecorationTheme(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  borderSide: const BorderSide(color: AppColors.inputBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  borderSide: const BorderSide(color: AppColors.inputFocused),
+                ),
+                filled: true,
+                fillColor: AppColors.white,
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-                borderSide: const BorderSide(color: AppColors.inputFocused),
-              ),
-              filled: true,
-              fillColor: AppColors.white,
             ),
-          ),
-          routerConfig: _createRouter(context),
-        ),
+            routerConfig: _router,
+          );
+        },
       ),
     );
   }
@@ -130,14 +235,34 @@ class MyApp extends StatelessWidget {
           },
         ),
         
-        // 🔥 소셜 로그인 콜백 처리
+        // 🔥 소셜 로그인 콜백 처리 (웹과 모바일 모두)
         GoRoute(
           path: '/auth/callback',
           name: 'auth-callback',
           builder: (context, state) {
             print('🔄 소셜 로그인 콜백 라우트 호출');
-            print('📦 쿼리 파라미터: ${state.uri.queryParameters}');
-            return SocialLoginCallbackScreen(queryParams: state.uri.queryParameters);
+            
+            // 🔥 웹에서는 URL 파라미터, 모바일에서는 extra 파라미터 사용
+            Map<String, String> queryParams;
+            
+            if (kIsWeb) {
+              // 웹: URL 쿼리 파라미터 사용
+              queryParams = state.uri.queryParameters;
+              print('🌐 웹 쿼리 파라미터: $queryParams');
+            } else {
+              // 모바일: Deep Link extra 파라미터 사용
+              final extraParams = state.extra;
+              if (extraParams is Map<String, String>) {
+                queryParams = extraParams;
+                print('📱 모바일 Deep Link 파라미터: $queryParams');
+              } else {
+                // fallback: URL 파라미터도 확인
+                queryParams = state.uri.queryParameters;
+                print('📱 모바일 fallback 파라미터: $queryParams');
+              }
+            }
+            
+            return SocialLoginCallbackScreen(queryParams: queryParams);
           },
         ),
       ],
