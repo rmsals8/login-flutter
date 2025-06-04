@@ -1,7 +1,7 @@
 // lib/presentation/providers/login_provider.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:html' as html;
+import 'package:universal_html/html.dart' as html;
 import '../../core/constants/app_strings.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/utils/validators.dart';
@@ -287,69 +287,73 @@ class LoginProvider extends ChangeNotifier {
     captchaController.clear();
   }
 
-  // 소셜 로그인 - 카카오 (수정됨)
-  Future<void> kakaoLogin() async {
-    print('📱 카카오 로그인 시작');
-    _isLoading = true;
-    _clearErrors();
-    notifyListeners();
+Future<void> kakaoLogin() async {
+  print('📱 카카오 로그인 시작');
+  _isLoading = true;
+  _clearErrors();
+  notifyListeners();
 
-    try {
-      // 🔥 콜백 URL 포함한 카카오 로그인 URL
-      final currentOrigin = html.window.location.origin;
-      final redirectUri = Uri.encodeComponent('$currentOrigin/auth/callback');
-      final kakaoLoginUrl = '${ApiConstants.baseUrl}/api/auth/kakao/login?redirect_uri=$redirectUri';
-      
-      print('🔗 카카오 로그인 URL: $kakaoLoginUrl');
-      
-      final success = await UrlLauncherHelper.launchURL(kakaoLoginUrl);
-      if (!success) {
-        _errorMessage = '카카오 로그인을 시작할 수 없습니다.';
-        print('❌ 카카오 로그인 실패: $_errorMessage');
-      } else {
-        print('✅ 카카오 로그인 URL 실행 성공');
-        // 성공 시에는 콜백에서 처리되므로 여기서는 로딩만 해제
-      }
-    } catch (e) {
-      _errorMessage = '카카오 로그인 중 오류가 발생했습니다.';
-      print('💥 카카오 로그인 예외: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+  try {
+    // 🔥 현재 Flutter 앱의 콜백 URL 생성
+    final currentOrigin = html.window.location.origin;
+    final redirectUri = Uri.encodeComponent('$currentOrigin/auth/callback');
+    
+    // 🔥 app_type 파라미터 추가로 Flutter 앱임을 명시
+    final kakaoLoginUrl = '${ApiConstants.baseUrl}/api/auth/kakao/login?redirect_uri=$redirectUri&app_type=flutter';
+    
+    print('🔗 카카오 로그인 URL: $kakaoLoginUrl');
+    print('📍 현재 Origin: $currentOrigin');
+    print('🔄 Redirect URI: ${Uri.decodeComponent(redirectUri)}');
+    
+    final success = await UrlLauncherHelper.launchURL(kakaoLoginUrl);
+    if (!success) {
+      _errorMessage = '카카오 로그인을 시작할 수 없습니다.';
+      print('❌ 카카오 로그인 실패: $_errorMessage');
+    } else {
+      print('✅ 카카오 로그인 URL 실행 성공');
+      // 성공 시에는 콜백에서 처리되므로 여기서는 로딩만 해제
     }
-  }
-
-  // 소셜 로그인 - 네이버 (수정됨)
-  Future<void> naverLogin() async {
-    print('📱 네이버 로그인 시작');
-    _isLoading = true;
-    _clearErrors();
+  } catch (e) {
+    _errorMessage = '카카오 로그인 중 오류가 발생했습니다.';
+    print('💥 카카오 로그인 예외: $e');
+  } finally {
+    _isLoading = false;
     notifyListeners();
-
-    try {
-      // 🔥 콜백 URL 포함한 네이버 로그인 URL
-      final currentOrigin = html.window.location.origin;
-      final redirectUri = Uri.encodeComponent('$currentOrigin/auth/callback');
-      final naverLoginUrl = '${ApiConstants.baseUrl}/api/auth/naver/login?redirect_uri=$redirectUri';
-      
-      print('🔗 네이버 로그인 URL: $naverLoginUrl');
-      
-      final success = await UrlLauncherHelper.launchURL(naverLoginUrl);
-      if (!success) {
-        _errorMessage = '네이버 로그인을 시작할 수 없습니다.';
-        print('❌ 네이버 로그인 실패: $_errorMessage');
-      } else {
-        print('✅ 네이버 로그인 URL 실행 성공');
-      }
-    } catch (e) {
-      _errorMessage = '네이버 로그인 중 오류가 발생했습니다.';
-      print('💥 네이버 로그인 예외: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
   }
+}
 
+// 네이버 로그인도 동일하게 수정
+Future<void> naverLogin() async {
+  print('📱 네이버 로그인 시작');
+  _isLoading = true;
+  _clearErrors();
+  notifyListeners();
+
+  try {
+    // 🔥 현재 Flutter 앱의 콜백 URL 생성
+    final currentOrigin = html.window.location.origin;
+    final redirectUri = Uri.encodeComponent('$currentOrigin/auth/callback');
+    
+    // 🔥 app_type 파라미터 추가로 Flutter 앱임을 명시
+    final naverLoginUrl = '${ApiConstants.baseUrl}/api/auth/naver/login?redirect_uri=$redirectUri&app_type=flutter';
+    
+    print('🔗 네이버 로그인 URL: $naverLoginUrl');
+    
+    final success = await UrlLauncherHelper.launchURL(naverLoginUrl);
+    if (!success) {
+      _errorMessage = '네이버 로그인을 시작할 수 없습니다.';
+      print('❌ 네이버 로그인 실패: $_errorMessage');
+    } else {
+      print('✅ 네이버 로그인 URL 실행 성공');
+    }
+  } catch (e) {
+    _errorMessage = '네이버 로그인 중 오류가 발생했습니다.';
+    print('💥 네이버 로그인 예외: $e');
+  } finally {
+    _isLoading = false;
+    notifyListeners();
+  }
+}
   // 에러 메시지 설정 (외부에서 호출용)
   void setErrorMessage(String message) {
     _errorMessage = message;

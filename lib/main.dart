@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:io';
 import 'core/utils/storage_helper.dart';
 import 'data/services/api_service.dart';
 import 'core/constants/app_colors.dart';
@@ -16,10 +17,33 @@ import 'presentation/screens/social_login_callback_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // 🔥 강력한 SSL 검증 완전 무시
+  HttpOverrides.global = DevHttpOverrides();
+  
   // 필수 서비스 초기화
   await _initializeServices();
   
   runApp(const MyApp());
+}
+
+// 🔥 개발용 HTTP 오버라이드 (모든 SSL 무시)
+class DevHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    final client = super.createHttpClient(context);
+    
+    // 🔥 모든 SSL 인증서 무시
+    client.badCertificateCallback = (X509Certificate cert, String host, int port) {
+      print('🔓 SSL 인증서 무시: $host:$port');
+      return true; // 모든 인증서 허용
+    };
+    
+    // 🔥 타임아웃 설정
+    client.connectionTimeout = const Duration(seconds: 30);
+    client.idleTimeout = const Duration(seconds: 30);
+    
+    return client;
+  }
 }
 
 Future<void> _initializeServices() async {

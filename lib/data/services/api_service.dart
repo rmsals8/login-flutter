@@ -1,8 +1,8 @@
 // lib/data/services/api_service.dart
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart'; // kIsWeb 사용
-// import 'package:dio_cookie_manager/dio_cookie_manager.dart'; // Web에서 제거
-// import 'package:cookie_jar/cookie_jar.dart'; // Web에서 제거
+import 'package:dio/io.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
 import '../../core/constants/api_constants.dart';
 import '../../core/utils/storage_helper.dart';
 
@@ -29,14 +29,24 @@ class ApiService {
       },
     ));
 
-    // 🔥 Web이 아닐 때만 쿠키 매니저 추가
+    // 🔥 모바일에서만 SSL 검증 무시 (강화된 버전)
     if (!kIsWeb) {
-      // 모바일/데스크톱에서만 쿠키 사용
-      print('📱 모바일 환경 - 쿠키 매니저 추가');
-      // final cookieJar = CookieJar();
-      // _dio.interceptors.add(CookieManager(cookieJar));
+      print('📱 모바일 환경 - SSL 검증 무시 설정 시작');
+      
+      _dio.httpClientAdapter = IOHttpClientAdapter(
+        createHttpClient: () {
+          final client = HttpClient();
+          client.badCertificateCallback = (X509Certificate cert, String host, int port) {
+            print('🔒 SSL 인증서 검증 무시: $host:$port');
+            return true; // 모든 인증서 허용
+          };
+          return client;
+        },
+      );
+      
+      print('✅ SSL 검증 무시 설정 완료');
     } else {
-      print('🌐 웹 환경 - 쿠키 매니저 스킵');
+      print('🌐 웹 환경 - SSL 검증 무시 스킵');
     }
 
     // 요청 인터셉터

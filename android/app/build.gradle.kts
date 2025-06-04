@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.example.login"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"  // 🔥 이 부분을 수정했음!
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

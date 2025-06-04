@@ -1,4 +1,6 @@
 // lib/data/services/auth_service.dart
+import 'dart:convert';
+
 import '../models/login_request.dart';
 import '../models/login_response.dart';
 import '../models/api_response.dart';
@@ -122,20 +124,29 @@ class AuthService {
   }
 
   // 캡차 이미지
-  Future<ApiResponse<String>> getCaptchaImage() async {
-    try {
-      final response = await _apiService.getCaptchaImage();
-      if (response.statusCode == 200 && response.data != null) {
-        final bytes = response.data as List<int>;
-        final base64String = 'data:image/jpeg;base64,' + String.fromCharCodes(bytes);
-        return ApiResponse.success(base64String);
-      } else {
-        return ApiResponse.error('캡차 이미지를 불러올 수 없습니다.');
-      }
-    } catch (e) {
-      return ApiResponse.error(_handleError(e));
+Future<ApiResponse<String>> getCaptchaImage() async {
+  try {
+    final response = await _apiService.getCaptchaImage();
+    if (response.statusCode == 200 && response.data != null) {
+      // 🔥 바이트 데이터를 올바르게 base64로 변환
+      final bytes = response.data as List<int>;
+      final base64String = base64Encode(bytes);
+      final dataUrl = 'data:image/jpeg;base64,$base64String';
+      
+      print('✅ 캡차 이미지 Base64 변환 성공');
+      print('📏 원본 바이트 길이: ${bytes.length}');
+      print('📏 Base64 문자열 길이: ${base64String.length}');
+      print('🔍 Base64 미리보기: ${base64String.substring(0, 50)}...');
+      
+      return ApiResponse.success(dataUrl);
+    } else {
+      return ApiResponse.error('캡차 이미지를 불러올 수 없습니다.');
     }
+  } catch (e) {
+    print('💥 getCaptchaImage 에러: $e');
+    return ApiResponse.error(_handleError(e));
   }
+}
 
   // 에러 처리
   String _handleError(dynamic error) {
