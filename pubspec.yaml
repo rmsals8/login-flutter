@@ -1,0 +1,55 @@
+name: login
+description: "Flutter로 구현한 Vue.js 로그인 앱"
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 상태 관리
+  provider: ^6.1.1
+
+  # HTTP 통신
+  dio: ^5.4.0
+  dio_cookie_manager: ^3.1.1
+  cookie_jar: ^4.0.8
+
+  # 로컬 저장소
+  shared_preferences: ^2.2.2
+
+  # 라우팅
+  go_router: ^12.1.3
+
+  # URL 런처 (소셜 로그인)
+  url_launcher: ^6.2.2
+
+  # 날짜/시간 포맷
+  intl: ^0.18.1
+
+  # 기본 아이콘
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # 린팅
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+
+  # 에셋 폴더 (나중에 이미지 추가할 때 사용)
+  assets:
+    - assets/images/
+
+  fonts:
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Regular.ttf
