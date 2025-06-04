@@ -28,7 +28,12 @@ dependencies:
   app_links: ^3.5.1
   # URL 런처 (소셜 로그인)
   url_launcher: ^6.2.2
+  # 카카오 로그인 SDK 추가
+  kakao_flutter_sdk_user: ^1.9.1
 
+  # 추가로 필요한 패키지들
+  crypto: ^3.0.3
+  package_info_plus: ^4.2.0
   # 날짜/시간 포맷
   intl: ^0.18.1
 
