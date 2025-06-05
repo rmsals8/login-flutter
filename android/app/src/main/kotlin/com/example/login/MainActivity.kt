@@ -1,65 +1,70 @@
 package com.example.login
 
-import io.flutter.embedding.android.FlutterFragmentActivity  // 🔥 FlutterFragmentActivity로 변경
+import io.flutter.embedding.android.FlutterFragmentActivity
 import android.content.pm.PackageManager
 import android.util.Base64
 import android.util.Log
 import java.security.MessageDigest
 
-// 🔥 FlutterActivity 대신 FlutterFragmentActivity 사용 (네이버 로그인 요구사항)
 class MainActivity : FlutterFragmentActivity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // 🔥 키 해시 출력 (카카오 로그인용)
-        Log.e("DEBUG", "MainActivity onCreate 시작!")
-        println("🚨 MainActivity onCreate 시작!")
-
-        printActualKeyHash()
+        
+        // 🔥 간단하고 확실한 키 해시 출력
+        Log.e("MAIN_ACTIVITY", "=== MainActivity onCreate 시작! ===")
+        System.out.println("🚨 MainActivity onCreate 시작!")
+        
+        getKeyHash()
     }
-
+    
     @Suppress("DEPRECATION")
-    private fun printActualKeyHash() {
-        Log.e("DEBUG", "printActualKeyHash 함수 시작!")
-        println("🚨 printActualKeyHash 함수 시작!")
-
+    private fun getKeyHash() {
         try {
-            val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNATURES)
-
-            Log.e("DEBUG", "패키지 정보 획득 성공!")
-            println("🚨 패키지 정보 획득 성공!")
-
+            Log.e("KEY_HASH", "키 해시 추출 시작")
+            println("🔑 키 해시 추출 시작")
+            
+            val packageInfo = packageManager.getPackageInfo(
+                packageName, 
+                PackageManager.GET_SIGNATURES
+            )
+            
+            // 🔥 null 체크 추가
             packageInfo.signatures?.let { signatures ->
-                Log.e("DEBUG", "서명 개수: ${signatures.size}")
-                println("🚨 서명 개수: ${signatures.size}")
-
-                for ((index, signature) in signatures.withIndex()) {
+                Log.e("KEY_HASH", "서명 개수: ${signatures.size}")
+                
+                for (signature in signatures) {
                     val md = MessageDigest.getInstance("SHA")
                     md.update(signature.toByteArray())
                     val keyHash = Base64.encodeToString(md.digest(), Base64.DEFAULT)
-
-                    // 🚨 여러 방법으로 출력
-                    Log.e("KAKAO_KEY_HASH", "키 해시 $index: $keyHash")
-                    println("🔑🔑🔑 키 해시 $index: $keyHash")
-                    System.out.println("🔑🔑🔑 키 해시 $index: $keyHash")
-
-                    // 기본값과 비교
-                    val defaultHash = "TdIjGxwnudP1pwv0sWT43BT3AF4=+9s="
-                    if (keyHash.trim() == defaultHash) {
-                        Log.e("KAKAO_KEY_HASH", "✅ 기본 키 해시와 동일!")
-                        println("✅ 기본 키 해시와 동일!")
-                    } else {
-                        Log.e("KAKAO_KEY_HASH", "❌ 기본 키 해시와 다름! 실제: $keyHash")
-                        println("❌ 기본 키 해시와 다름! 실제: $keyHash")
+                    
+                    // 🚨 모든 방법으로 출력
+                    Log.e("KEY_HASH_RESULT", "키 해시: $keyHash")
+                    Log.w("KEY_HASH_RESULT", "키 해시: $keyHash")
+                    Log.i("KEY_HASH_RESULT", "키 해시: $keyHash")
+                    Log.d("KEY_HASH_RESULT", "키 해시: $keyHash")
+                    
+                    println("🔑🔑🔑 키 해시: $keyHash")
+                    System.out.println("🔑🔑🔑 키 해시: $keyHash")
+                    System.err.println("🔑🔑🔑 키 해시: $keyHash")
+                    
+                    // 토스트도 표시
+                    runOnUiThread {
+                        android.widget.Toast.makeText(
+                            this,
+                            "키 해시: $keyHash",
+                            android.widget.Toast.LENGTH_LONG
+                        ).show()
                     }
                 }
             } ?: run {
-                Log.e("DEBUG", "❌ 서명 정보가 null입니다")
-                println("❌ 서명 정보가 null입니다")
+                Log.e("KEY_HASH_ERROR", "signatures가 null입니다")
+                println("❌ signatures가 null입니다")
             }
+            
         } catch (e: Exception) {
-            Log.e("KEY_HASH_ERROR", "키 해시 생성 실패: ${e.message}", e)
-            println("❌ 키 해시 생성 실패: ${e.message}")
+            Log.e("KEY_HASH_ERROR", "에러: ${e.message}")
+            println("❌ 키 해시 에러: ${e.message}")
+            e.printStackTrace()
         }
     }
 }

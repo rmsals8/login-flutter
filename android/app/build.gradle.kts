@@ -29,13 +29,11 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         
-        // 🔥 카카오 앱 키 추가 (올바른 네이티브 앱 키)
-        manifestPlaceholders["kakaoAppKey"] = "3c705327e15f9a41d47f7cb7f7d47e22"
-        
-        // 🔥 네이버 클라이언트 정보 추가 (실제 값으로 변경 필요)
-        manifestPlaceholders["naverClientId"] = "YOUR_NAVER_CLIENT_ID"
-        manifestPlaceholders["naverClientSecret"] = "YOUR_NAVER_CLIENT_SECRET"
-        manifestPlaceholders["naverClientName"] = "LOGIN"
+        // 🔥 manifestPlaceholders 모두 제거 (AndroidManifest.xml에 직접 하드코딩했으므로 불필요)
+        // manifestPlaceholders["kakaoAppKey"] = "3c705327e15f9a41d47f7cb7f7d47e22"
+        // manifestPlaceholders["naverClientId"] = "cLBkHaACWIwiuFrszG6r"
+        // manifestPlaceholders["naverClientSecret"] = "dxF5NacR2R"
+        // manifestPlaceholders["naverClientName"] = "sesk_login"
     }
 
     buildTypes {

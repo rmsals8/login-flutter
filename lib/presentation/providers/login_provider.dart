@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
-
+import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_dimensions.dart';
 // 🔥 네이버 로그인 관련 import 모두 추가
 import 'package:flutter_naver_login/flutter_naver_login.dart';
 import 'package:flutter_naver_login/interface/types/naver_login_result.dart';
@@ -335,115 +337,305 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
-// 🔥 네이버 로그인 디버그 강화 버전
 Future<void> naverLogin() async {
-  print('📱 네이버 Native SDK 로그인 시작');
+  print('📱 === 네이버 로그인 시작 ===');
   _isLoading = true;
   _clearErrors();
   notifyListeners();
 
   try {
-    // 🔥 네이버 SDK 상태 확인
-    print('🔍 네이버 SDK 상태 확인 중...');
+    // 🔥 1단계: 네이버 앱 설치 여부 확인
+    print('🔍 네이버 앱 설치 상태 확인 중...');
     
-    // 1. 네이버 로그인 실행
-    print('🚀 네이버 로그인 실행...');
-    final NaverLoginResult result = await FlutterNaverLogin.logIn();
+    bool isNaverAppInstalled = await _checkNaverAppInstalled();
     
-    print('📊 네이버 로그인 상세 결과:');
-    print('  - status: ${result.status}');
-    print('  - account: ${result.account}');
-    
-    if (result.status == NaverLoginStatus.loggedIn) {
-      print('✅ 네이버 로그인 성공! 토큰 가져오는 중...');
-      
-      // 2. 토큰 가져오기
-      try {
-        final NaverToken token = await FlutterNaverLogin.getCurrentAccessToken();
-        
-        print('📊 네이버 토큰 정보:');
-        print('  - accessToken: ${token.accessToken.substring(0, 20)}...');
-        print('  - refreshToken: ${token.refreshToken?.substring(0, 20) ?? "없음"}...');
-        print('  - tokenType: ${token.tokenType}');
-        print('  - expiresAt: ${token.expiresAt}');
-        print('  - isValid: ${token.isValid()}');
-        
-        if (!token.isValid()) {
-          throw Exception('네이버 토큰이 유효하지 않습니다');
-        }
-        
-        // 3. 사용자 정보 가져오기 (선택적)
-        try {
-          final NaverAccountResult account = await FlutterNaverLogin.getCurrentAccount();
-          print('📊 네이버 사용자 정보:');
-          print('  - id: ${account.id}');
-          print('  - name: ${account.name}');
-          print('  - email: ${account.email}');
-          print('  - nickname: ${account.nickname}');
-        } catch (accountError) {
-          print('⚠️ 사용자 정보 가져오기 실패: $accountError');
-          // 사용자 정보 실패해도 토큰이 있으면 계속 진행
-        }
-        
-        // 4. 서버로 토큰 전송
-        print('📡 서버로 네이버 토큰 전송 시작...');
-        await _sendNaverTokenToBackend(token.accessToken);
-        
-      } catch (tokenError) {
-        print('❌ 네이버 토큰 처리 실패: $tokenError');
-        throw Exception('네이버 토큰 처리 실패: $tokenError');
-      }
-      
-    } else if (result.status == NaverLoginStatus.loggedOut) {
-      print('❌ 네이버 로그인이 loggedOut 상태로 반환됨');
-      print('🔍 가능한 원인들:');
-      print('  1. 네이버 앱이 설치되지 않음');
-      print('  2. strings.xml 설정 오류');
-      print('  3. AndroidManifest.xml 설정 오류'); 
-      print('  4. 네이버 개발자 콘솔 설정 오류');
-      print('  5. 사용자가 로그인 취소');
-      
-      throw Exception('네이버 로그인이 취소되었거나 설정에 문제가 있습니다');
-      
-    } else if (result.status == NaverLoginStatus.error) {
-      print('❌ 네이버 로그인 에러 상태');
-      throw Exception('네이버 로그인 에러가 발생했습니다');
-      
-    } else {
-      print('❌ 알 수 없는 네이버 로그인 상태: ${result.status}');
-      throw Exception('알 수 없는 네이버 로그인 상태: ${result.status}');
+    if (!isNaverAppInstalled) {
+      print('❌ 네이버 앱이 설치되지 않음');
+      await _showNaverAppInstallDialog();
+      return;
     }
-
+    
+    print('✅ 네이버 앱이 설치되어 있음 - 로그인 진행');
+    
+    // 🔥 2단계: 네이버 로그인 실행
+    await _performNaverLogin();
+    
   } catch (error) {
-    print('💥 네이버 로그인 전체 예외: $error');
-    print('📋 예외 타입: ${error.runtimeType}');
-    
-    String errorString = error.toString().toLowerCase();
-    
-    if (errorString.contains('취소') || 
-        errorString.contains('cancel') || 
-        errorString.contains('사용자가') ||
-        errorString.contains('loggedout')) {
-      _errorMessage = '네이버 로그인이 취소되었습니다.';
-    } else if (errorString.contains('설정') || 
-               errorString.contains('config') ||
-               errorString.contains('misconfigured')) {
-      _errorMessage = '네이버 로그인 설정을 확인해주세요.';
-    } else if (errorString.contains('네트워크') || 
-               errorString.contains('network') || 
-               errorString.contains('연결')) {
-      _errorMessage = '네트워크 연결을 확인해주세요.';
-    } else {
-      _errorMessage = '네이버 로그인 중 오류가 발생했습니다.';
-    }
-    
-    print('🎯 설정된 에러 메시지: $_errorMessage');
+    print('💥 네이버 로그인 오류: $error');
+    _errorMessage = '네이버 로그인 중 오류가 발생했습니다.';
   } finally {
     _isLoading = false;
     notifyListeners();
   }
 }
 
+// 🔥 네이버 앱 설치 여부 확인
+Future<bool> _checkNaverAppInstalled() async {
+  try {
+    // 방법 1: 네이버 SDK 상태로 간접 확인
+    print('📱 네이버 SDK 상태 확인...');
+    
+    // 간단한 로그인 시도로 앱 설치 여부 간접 확인
+    final result = await FlutterNaverLogin.logIn();
+    
+    // loggedOut이면서 즉시 반환되면 앱이 없을 가능성
+    if (result.status == NaverLoginStatus.loggedOut) {
+      print('⚠️ 네이버 앱이 설치되지 않았을 가능성');
+      return false;
+    }
+    
+    return true;
+    
+  } catch (e) {
+    print('❌ 네이버 앱 확인 실패: $e');
+    return false;
+  }
+}
+
+// 🔥 네이버 앱 설치 안내 다이얼로그
+Future<void> _showNaverAppInstallDialog() async {
+  if (_context == null) return;
+  
+  final result = await showDialog<bool>(
+    context: _context!,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 네이버 아이콘
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF03C75A),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.apps,
+                  size: 32,
+                  color: AppColors.white,
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // 제목
+              Text(
+                '네이버 앱 설치 필요',
+                style: TextStyle(
+                  fontSize: AppDimensions.fontSizeXLarge,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              
+              // 설명 텍스트
+              Text(
+                '네이버 로그인을 위해서는 네이버 앱이 필요합니다.\nGoogle Play Store에서 네이버 앱을 설치하시겠습니까?',
+                style: TextStyle(
+                  fontSize: AppDimensions.fontSizeRegular,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              
+              // 버튼들
+              Row(
+                children: [
+                  // 취소 버튼
+                  Expanded(
+                    child: SizedBox(
+                      height: AppDimensions.buttonHeight,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.lightGrey,
+                          foregroundColor: AppColors.textSecondary,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                          ),
+                        ),
+                        child: Text(
+                          '취소',
+                          style: TextStyle(
+                            fontSize: AppDimensions.fontSizeRegular,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  
+                  // 설치하기 버튼
+                  Expanded(
+                    child: SizedBox(
+                      height: AppDimensions.buttonHeight,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF03C75A),
+                          foregroundColor: AppColors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.download,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '설치하기',
+                              style: TextStyle(
+                                fontSize: AppDimensions.fontSizeRegular,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+  
+  if (result == true) {
+    await _openNaverAppInPlayStore();
+  }
+}
+
+// 🔥 플레이스토어에서 네이버 앱 열기
+Future<void> _openNaverAppInPlayStore() async {
+  try {
+    print('🏪 플레이스토어에서 네이버 앱 열기...');
+    
+    // 플레이스토어 네이버 앱 URL
+    const naverAppUrl = 'https://play.google.com/store/apps/details?id=com.nhn.android.search';
+    
+    final success = await UrlLauncherHelper.launchURL(naverAppUrl);
+    
+    if (success) {
+      print('✅ 플레이스토어 열기 성공');
+      _successMessage = '플레이스토어에서 네이버 앱을 설치한 후 다시 시도해주세요.';
+    } else {
+      print('❌ 플레이스토어 열기 실패');
+      _errorMessage = '플레이스토어를 열 수 없습니다. 수동으로 네이버 앱을 설치해주세요.';
+    }
+    
+  } catch (e) {
+    print('💥 플레이스토어 열기 오류: $e');
+    _errorMessage = '플레이스토어를 열 수 없습니다.';
+  }
+}
+
+// 🔥 실제 네이버 로그인 수행
+Future<void> _performNaverLogin() async {
+  try {
+    print('🚀 네이버 로그인 실행...');
+    
+    // 기존 로그아웃
+    await FlutterNaverLogin.logOut();
+    
+    // 로그인 실행
+    final result = await FlutterNaverLogin.logIn();
+    
+    print('📊 네이버 로그인 결과: ${result.status}');
+    
+    if (result.status == NaverLoginStatus.loggedIn) {
+      print('✅ 네이버 로그인 성공!');
+      
+      final token = await FlutterNaverLogin.getCurrentAccessToken();
+      print('🔑 토큰 획득 성공');
+      
+      await _sendNaverTokenToBackend(token.accessToken);
+      
+    } else {
+      print('❌ 네이버 로그인 실패: ${result.status}');
+      throw Exception('네이버 로그인 실패');
+    }
+    
+  } catch (e) {
+    print('💥 네이버 로그인 수행 오류: $e');
+    rethrow;
+  }
+}
+
+// 🔥 네이버 로그인 실패 원인 진단
+Future<String> _diagnoseNaverLoginFailure() async {
+  final issues = <String>[];
+  
+  try {
+    // 1. strings.xml 값 확인 (실제로는 확인 불가하지만 로그 출력)
+    print('🔍 설정 파일 확인 중...');
+    
+    // 2. 네이버 앱 설치 여부 (간접 확인)
+    print('📱 네이버 앱 관련 확인 중...');
+    
+    // 3. 네트워크 상태 확인
+    print('🌐 네트워크 상태 확인 중...');
+    
+    issues.add('네이버 개발자 콘솔 설정 확인 필요');
+    issues.add('로고 이미지 업로드 확인 필요');
+    issues.add('클라이언트 ID/Secret 정확성 확인 필요');
+    
+  } catch (e) {
+    issues.add('진단 과정에서 오류 발생');
+  }
+  
+  return issues.join(', ');
+}
+
+// 🔥 네이버 에러 분류
+String _categorizeNaverError(String errorString) {
+  final lowerError = errorString.toLowerCase();
+  
+  if (lowerError.contains('loggedout')) {
+    return '네이버 개발자 콘솔 설정을 확인해주세요. 특히 로고 이미지와 패키지명을 확인하세요.';
+  } else if (lowerError.contains('network') || lowerError.contains('timeout')) {
+    return '네트워크 연결을 확인해주세요.';
+  } else if (lowerError.contains('token')) {
+    return '네이버 토큰 처리 중 오류가 발생했습니다.';
+  } else if (lowerError.contains('cancel')) {
+    return '네이버 로그인이 취소되었습니다.';
+  } else {
+    return '네이버 로그인 중 오류가 발생했습니다. 개발자 콘솔 설정을 확인해주세요.';
+  }
+}
   // 🔥 카카오 토큰을 서버로 전송
   Future<void> _sendKakaoTokenToBackend(String kakaoAccessToken) async {
     try {

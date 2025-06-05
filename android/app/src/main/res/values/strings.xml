@@ -3,5 +3,5 @@
     <!-- 🔥 네이버 개발자 센터 정보와 정확히 일치하는지 재확인 -->
     <string name="client_id">cLBkHaACWIwiuFrszG6r</string>
     <string name="client_secret">dxF5NacR2R</string>
-    <string name="client_name">login</string>
+    <string name="client_name">sesk_login</string>
 </resources>
