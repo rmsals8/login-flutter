@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:app_links/app_links.dart';
-import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart'; // 🔥 카카오 SDK 추가
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart'; // 🔥 카카오 SDK
 import 'dart:io';
 import 'core/utils/storage_helper.dart';
 import 'data/services/api_service.dart';
@@ -19,20 +19,23 @@ import 'presentation/screens/social_login_callback_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 🔥 카카오 SDK 초기화 추가
+  
+  // 🔥 카카오 SDK 초기화
   KakaoSdk.init(
     nativeAppKey: '3c705327e15f9a41d47f7cb7f7d47e22',
-    javaScriptAppKey: 'f58d90da996dde429e2b1bec01bd520b', // 웹에서도 같은 키 사용
+    javaScriptAppKey: 'f58d90da996dde429e2b1bec01bd520b',
   );
   print('✅ 카카오 SDK 초기화 완료');
-
+  
+  // 🔥 네이버 SDK는 자동 초기화됨 (strings.xml과 AndroidManifest.xml 설정으로)
+  print('✅ 네이버 SDK는 네이티브 설정으로 자동 초기화됨');
+  
   // 🔥 강력한 SSL 검증 완전 무시
   HttpOverrides.global = DevHttpOverrides();
-
+  
   // 필수 서비스 초기화
   await _initializeServices();
-
+  
   runApp(const MyApp());
 }
 
@@ -41,17 +44,17 @@ class DevHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     final client = super.createHttpClient(context);
-
+    
     // 🔥 모든 SSL 인증서 무시
     client.badCertificateCallback = (X509Certificate cert, String host, int port) {
       print('🔓 SSL 인증서 무시: $host:$port');
       return true; // 모든 인증서 허용
     };
-
+    
     // 🔥 타임아웃 설정
     client.connectionTimeout = const Duration(seconds: 30);
     client.idleTimeout = const Duration(seconds: 30);
-
+    
     return client;
   }
 }
@@ -61,15 +64,15 @@ Future<void> _initializeServices() async {
     // SharedPreferences 초기화
     await StorageHelper.init();
     print('✅ StorageHelper 초기화 완료');
-
+    
     // API 서비스 초기화
     ApiService().init();
     print('✅ ApiService 초기화 완료');
-
+    
     // 환경 변수 로깅
     print('🌍 현재 환경: development');
     print('🔗 API URL: https://3.37.89.76');
-
+    
   } catch (e) {
     print('❌ 서비스 초기화 실패: $e');
   }
@@ -92,17 +95,17 @@ class _MyAppState extends State<MyApp> {
     _initDeepLinks();
   }
 
-  // 🔥 Deep Link 초기화 (수정된 버전)
+  // 🔥 Deep Link 초기화
   void _initDeepLinks() {
     if (kIsWeb) {
       print('🌐 웹 환경: Deep Link 초기화 스킵');
       return;
     }
-
+    
     print('📱 모바일 환경: Deep Link 초기화 시작');
     _appLinks = AppLinks();
-
-    // 🔥 수정: getInitialAppLink() 사용
+    
+    // 초기 Deep Link 처리
     _appLinks.getInitialAppLink().then((Uri? uri) {
       if (uri != null) {
         print('🔗 초기 Deep Link: $uri');
@@ -111,8 +114,8 @@ class _MyAppState extends State<MyApp> {
     }).catchError((error) {
       print('❌ 초기 Deep Link 오류: $error');
     });
-
-    // 🔥 수정: allUriLinkStream 사용
+    
+    // 실시간 Deep Link 처리
     _appLinks.allUriLinkStream.listen((Uri uri) {
       print('🔗 실시간 Deep Link: $uri');
       _handleDeepLink(uri);
@@ -127,12 +130,12 @@ class _MyAppState extends State<MyApp> {
     print('  - scheme: ${uri.scheme}');
     print('  - path: ${uri.path}');
     print('  - queryParameters: ${uri.queryParameters}');
-
+    
     // com.example.login://auth/callback?token=...&userId=... 형태
     if (uri.scheme == 'com.example.login' && uri.path == '/auth/callback') {
       final queryParams = uri.queryParameters;
       print('📦 Deep Link 파라미터: $queryParams');
-
+      
       if (_router != null) {
         // 소셜 로그인 콜백 화면으로 이동
         print('🚀 콜백 화면으로 이동 시작');
@@ -207,11 +210,11 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  // 🔥 라우터 생성 (context 전달로 Provider 접근 가능하게)
+  // 🔥 라우터 생성
   GoRouter _createRouter(BuildContext context) {
     return GoRouter(
       initialLocation: '/splash',
-      debugLogDiagnostics: true, // 디버그 로그 활성화
+      debugLogDiagnostics: true,
       routes: [
         // 스플래시 화면
         GoRoute(
@@ -222,7 +225,7 @@ class _MyAppState extends State<MyApp> {
             return const SplashScreen();
           },
         ),
-
+        
         // 로그인 화면
         GoRoute(
           path: '/login',
@@ -232,7 +235,7 @@ class _MyAppState extends State<MyApp> {
             return const LoginScreen();
           },
         ),
-
+        
         // 대시보드 화면
         GoRoute(
           path: '/dashboard',
@@ -242,17 +245,17 @@ class _MyAppState extends State<MyApp> {
             return const DashboardScreen();
           },
         ),
-
-        // 🔥 소셜 로그인 콜백 처리 (웹과 모바일 모두)
+        
+        // 🔥 소셜 로그인 콜백 처리
         GoRoute(
           path: '/auth/callback',
           name: 'auth-callback',
           builder: (context, state) {
             print('🔄 소셜 로그인 콜백 라우트 호출');
-
-            // 🔥 웹에서는 URL 파라미터, 모바일에서는 extra 파라미터 사용
+            
+            // 웹과 모바일 파라미터 처리
             Map<String, String> queryParams;
-
+            
             if (kIsWeb) {
               // 웹: URL 쿼리 파라미터 사용
               queryParams = state.uri.queryParameters;
@@ -269,7 +272,7 @@ class _MyAppState extends State<MyApp> {
                 print('📱 모바일 fallback 파라미터: $queryParams');
               }
             }
-
+            
             return SocialLoginCallbackScreen(queryParams: queryParams);
           },
         ),
@@ -277,32 +280,32 @@ class _MyAppState extends State<MyApp> {
       redirect: (context, state) {
         final location = state.matchedLocation;
         print('🚦 라우터 리다이렉트 체크: $location');
-
+        
         try {
           // Provider 안전하게 접근
           final authProvider = context.read<AuthProvider>();
           final isLoggedIn = authProvider.isAuthenticated;
-
+          
           print('🔐 인증 상태: $isLoggedIn');
-
+          
           // 스플래시나 콜백 화면은 항상 허용
           if (location == '/splash' || location.startsWith('/auth/callback')) {
             print('✅ 특별 경로 허용: $location');
             return null;
           }
-
+          
           // 로그인되지 않은 상태에서 대시보드 접근 시
           if (!isLoggedIn && location == '/dashboard') {
             print('🚫 비인증 상태에서 대시보드 접근 → 로그인으로 리다이렉트');
             return '/login';
           }
-
+          
           // 로그인된 상태에서 로그인 페이지 접근 시
           if (isLoggedIn && location == '/login') {
             print('🚫 인증된 상태에서 로그인 페이지 접근 → 대시보드로 리다이렉트');
             return '/dashboard';
           }
-
+          
           print('✅ 리다이렉트 없음: $location');
           return null;
         } catch (e) {

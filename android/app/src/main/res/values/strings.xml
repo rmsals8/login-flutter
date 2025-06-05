@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 🔥 네이버 개발자 센터 정보와 정확히 일치하는지 재확인 -->
+    <string name="client_id">cLBkHaACWIwiuFrszG6r</string>
+    <string name="client_secret">dxF5NacR2R</string>
+    <string name="client_name">login</string>
+</resources>

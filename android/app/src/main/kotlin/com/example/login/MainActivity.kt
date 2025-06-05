@@ -1,16 +1,17 @@
 package com.example.login
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity  // 🔥 FlutterFragmentActivity로 변경
 import android.content.pm.PackageManager
 import android.util.Base64
 import android.util.Log
 import java.security.MessageDigest
 
-class MainActivity : FlutterActivity() {
+// 🔥 FlutterActivity 대신 FlutterFragmentActivity 사용 (네이버 로그인 요구사항)
+class MainActivity : FlutterFragmentActivity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 🔥 강제로 키 해시 출력
+        // 🔥 키 해시 출력 (카카오 로그인용)
         Log.e("DEBUG", "MainActivity onCreate 시작!")
         println("🚨 MainActivity onCreate 시작!")
 
@@ -43,7 +44,7 @@ class MainActivity : FlutterActivity() {
                     System.out.println("🔑🔑🔑 키 해시 $index: $keyHash")
 
                     // 기본값과 비교
-                    val defaultHash = "Xo8WBi6jzSxKDVKUpiJNTp5u+9s="
+                    val defaultHash = "TdIjGxwnudP1pwv0sWT43BT3AF4=+9s="
                     if (keyHash.trim() == defaultHash) {
                         Log.e("KAKAO_KEY_HASH", "✅ 기본 키 해시와 동일!")
                         println("✅ 기본 키 해시와 동일!")

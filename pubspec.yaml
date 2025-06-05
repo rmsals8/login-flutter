@@ -36,7 +36,7 @@ dependencies:
   package_info_plus: ^4.2.0
   # 날짜/시간 포맷
   intl: ^0.18.1
-
+  flutter_naver_login: ^2.1.1
   # 기본 아이콘
   cupertino_icons: ^1.0.8
 
