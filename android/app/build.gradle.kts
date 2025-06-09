@@ -5,6 +5,49 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+fun getEnvVariable(name: String, defaultValue: String = ""): String {
+    // 1. System environment variables first
+    val systemValue = System.getenv(name)
+    if (!systemValue.isNullOrBlank()) {
+        println("Found $name in system environment")
+        return systemValue
+    }
+    
+    // 2. Read from root .env file
+    val rootEnvFile = rootProject.file("../.env")  // Go to Flutter root
+    if (rootEnvFile.exists()) {
+        println("Root .env file path: ${rootEnvFile.absolutePath}")
+        try {
+            val envContent = rootEnvFile.readText()
+            println(".env file preview:")
+            envContent.lines().take(3).forEach { line ->
+                if (line.trim().isNotEmpty() && !line.startsWith("#")) {
+                    println("   $line")
+                }
+            }
+            
+            // Parse .env file (KEY=VALUE format)
+            envContent.lines().forEach { line ->
+                val trimmedLine = line.trim()
+                if (trimmedLine.isNotEmpty() && !trimmedLine.startsWith("#") && "=" in trimmedLine) {
+                    val parts = trimmedLine.split("=", limit = 2)
+                    if (parts.size == 2 && parts[0].trim() == name) {
+                        val value = parts[1].trim()
+                        println("Found $name in root .env file")
+                        return value
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("Failed to read .env file: ${e.message}")
+        }
+    } else {
+        println("Root .env file not found: ${rootEnvFile.absolutePath}")
+    }
+    
+    return defaultValue
+}
+
 android {
     namespace = "com.example.login"
     compileSdk = flutter.compileSdkVersion
@@ -20,26 +63,46 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.login"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         
-        // 🔥 manifestPlaceholders 모두 제거 (AndroidManifest.xml에 직접 하드코딩했으므로 불필요)
-        // manifestPlaceholders["kakaoAppKey"] = "3c705327e15f9a41d47f7cb7f7d47e22"
-        // manifestPlaceholders["naverClientId"] = "cLBkHaACWIwiuFrszG6r"
-        // manifestPlaceholders["naverClientSecret"] = "dxF5NacR2R"
-        // manifestPlaceholders["naverClientName"] = "sesk_login"
+        println("Starting environment variable loading...")
+        
+        // Read environment variables from root .env file
+        val naverClientId = getEnvVariable("NAVER_CLIENT_ID")
+        val naverClientSecret = getEnvVariable("NAVER_CLIENT_SECRET") 
+        val naverClientName = getEnvVariable("NAVER_CLIENT_NAME")
+        val kakaoAppKey = getEnvVariable("KAKAO_NATIVE_APP_KEY")
+      
+        // Validate loaded values (show only length for security)
+        println("Loaded environment variables:")
+        println("   - NAVER_CLIENT_ID: ${naverClientId.length} characters")
+        println("   - NAVER_CLIENT_SECRET: ${naverClientSecret.length} characters")  
+        println("   - NAVER_CLIENT_NAME: ${naverClientName.length} characters")
+        println("   - KAKAO_APP_KEY: ${kakaoAppKey.length} characters")
+    
+        // Check that required values are not empty
+        if (naverClientId.isBlank() || naverClientSecret.isBlank()) {
+            throw GradleException("Naver Client ID or Secret is empty!")
+        }
+        if (kakaoAppKey.isBlank()) {
+            throw GradleException("Kakao App Key is empty!")
+        }
+   
+        // Set manifestPlaceholders
+        manifestPlaceholders["naverClientId"] = naverClientId
+        manifestPlaceholders["naverClientSecret"] = naverClientSecret
+        manifestPlaceholders["naverClientName"] = naverClientName
+        manifestPlaceholders["kakaoAppKey"] = kakaoAppKey
+      
+        println("All environment variables successfully set in manifestPlaceholders")
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
     }

@@ -12,6 +12,8 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # 환경변수
+  flutter_dotenv: ^5.1.0
   # 상태 관리
   provider: ^6.1.1
 
@@ -52,6 +54,7 @@ flutter:
 
   # 에셋 폴더 (나중에 이미지 추가할 때 사용)
   assets:
+    - .env
     - assets/images/
 
   fonts:

@@ -1,6 +1,7 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // 🔥 .env 파일 읽기용
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:app_links/app_links.dart';
@@ -20,12 +21,37 @@ import 'presentation/screens/social_login_callback_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 🔥 카카오 SDK 초기화
+  // 🔥 .env 파일 로드
+  await dotenv.load(fileName: ".env");
+  print('✅ .env 파일 로드 완료');
+  
+  // 🔥 .env에서 카카오 키 읽기
+  final kakaoNativeAppKey = dotenv.env['KAKAO_NATIVE_APP_KEY'] ?? '';
+  final kakaoJavaScriptAppKey = dotenv.env['KAKAO_JAVASCRIPT_APP_KEY'] ?? '';
+  final baseUrl = dotenv.env['BASE_URL'] ?? '';
+  
+  // 🔥 환경변수 검증
+  if (kakaoNativeAppKey.isEmpty) {
+    throw Exception('KAKAO_NATIVE_APP_KEY가 .env 파일에 설정되지 않았습니다!');
+  }
+  if (kakaoJavaScriptAppKey.isEmpty) {
+    throw Exception('KAKAO_JAVASCRIPT_APP_KEY가 .env 파일에 설정되지 않았습니다!');
+  }
+  if (baseUrl.isEmpty) {
+    throw Exception('BASE_URL이 .env 파일에 설정되지 않았습니다!');
+  }
+  
+  print('🔑 .env에서 로드된 값들:');
+  print('  - BASE_URL: $baseUrl');
+  print('  - KAKAO_NATIVE_APP_KEY: ${kakaoNativeAppKey.substring(0, 10)}...');
+  print('  - KAKAO_JAVASCRIPT_APP_KEY: ${kakaoJavaScriptAppKey.substring(0, 10)}...');
+  
+  // 🔥 카카오 SDK 초기화 (.env 값 사용)
   KakaoSdk.init(
-    nativeAppKey: '3c705327e15f9a41d47f7cb7f7d47e22',
-    javaScriptAppKey: 'f58d90da996dde429e2b1bec01bd520b',
+    nativeAppKey: kakaoNativeAppKey,
+    javaScriptAppKey: kakaoJavaScriptAppKey,
   );
-  print('✅ 카카오 SDK 초기화 완료');
+  print('✅ 카카오 SDK 초기화 완료 (.env 파일 사용)');
   
   // 🔥 네이버 SDK는 자동 초기화됨 (strings.xml과 AndroidManifest.xml 설정으로)
   print('✅ 네이버 SDK는 네이티브 설정으로 자동 초기화됨');
@@ -61,6 +87,13 @@ class DevHttpOverrides extends HttpOverrides {
 
 Future<void> _initializeServices() async {
   try {
+    // 🔥 .env에서 BASE_URL 확인
+    final baseUrl = dotenv.env['BASE_URL'] ?? '';
+    if (baseUrl.isEmpty) {
+      throw Exception('BASE_URL이 .env 파일에 설정되지 않았습니다!');
+    }
+    print('🌐 API URL 검증 완료: $baseUrl');
+    
     // SharedPreferences 초기화
     await StorageHelper.init();
     print('✅ StorageHelper 초기화 완료');
@@ -71,10 +104,10 @@ Future<void> _initializeServices() async {
     
     // 환경 변수 로깅
     print('🌍 현재 환경: development');
-    print('🔗 API URL: https://3.37.89.76');
     
   } catch (e) {
     print('❌ 서비스 초기화 실패: $e');
+    rethrow; // 환경변수 오류는 앱을 중단시켜야 함
   }
 }
 

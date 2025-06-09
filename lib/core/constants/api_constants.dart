@@ -1,7 +1,19 @@
-
 // lib/core/constants/api_constants.dart
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class ApiConstants {
-  static const String baseUrl = 'https://3.37.89.76';
+  // 🔥 .env에서 BASE_URL 읽기
+  static String get baseUrl => dotenv.env['BASE_URL'] ?? '';
+  
+  // 🔥 baseUrl 검증 함수
+  static String getValidatedBaseUrl() {
+    final url = baseUrl;
+    if (url.isEmpty) {
+      throw Exception('BASE_URL이 .env 파일에 설정되지 않았습니다!');
+    }
+    return url;
+  }
+  
   static const String loginEndpoint = '/api/auth/login';
   static const String logoutEndpoint = '/logout';
   static const String captchaImageEndpoint = '/api/captcha/image';
