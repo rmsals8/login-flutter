@@ -6,7 +6,7 @@ import 'package:universal_html/html.dart' as html;
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/storage_helper.dart';
 import '../../data/models/user_model.dart';
-import '../providers/auth_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class SocialLoginCallbackScreen extends StatefulWidget {
   final Map<String, String> queryParams;

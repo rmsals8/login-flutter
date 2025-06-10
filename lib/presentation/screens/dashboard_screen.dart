@@ -7,8 +7,8 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
 import '../../core/utils/date_helper.dart';
 import '../../core/utils/dialog_helper.dart';
-import '../providers/auth_provider.dart';
-import '../providers/login_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/login_provider.dart';
 import '../widgets/common/custom_app_bar.dart';
 import '../widgets/common/responsive_container.dart';
 
@@ -20,32 +20,149 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  
+  // 🔥 로딩 상태 관리
+  bool _isLoading = false;
+
+  // 🔥 완전히 새로 작성된 로그아웃 처리 메소드
   Future<void> _handleLogout() async {
+    print('🚪 대시보드 로그아웃 시작');
+    
+    // 사용자에게 확인 받기
     final confirmed = await DialogHelper.showConfirmDialog(
       context,
-      '정말 로그아웃하시겠습니까?',
+      '정말 로그아웃하시겠습니까?\n\n소셜 로그인을 사용하셨다면 해당 플랫폼에서도 로그아웃됩니다.',
       title: '로그아웃',
       confirmText: '로그아웃',
       cancelText: '취소',
     );
 
-    if (confirmed && mounted) {
-      print('🚪 로그아웃 시작');
+    if (!confirmed) {
+      print('로그아웃 취소됨');
+      return;
+    }
+
+    if (!mounted) return;
+
+    // 로딩 상태 시작
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      print('🔄 로그아웃 처리 시작');
       
       final authProvider = context.read<AuthProvider>();
       final loginProvider = context.read<LoginProvider>();
       
-      // 🔥 AuthProvider에서 로그아웃 처리
+      // 🔥 AuthProvider에서 완전 로그아웃 처리 (소셜 로그아웃 포함)
       await authProvider.logout();
-      print('✅ AuthProvider 로그아웃 완료');
+      print('✅ AuthProvider 완전 로그아웃 완료');
       
-      // 🔥 LoginProvider 초기화 (입력 필드 등 클리어)
+      // 🔥 LoginProvider 초기화
       loginProvider.onLogout();
       print('✅ LoginProvider 초기화 완료');
       
-      // 로그인 화면으로 이동
-      context.go('/login');
-      print('🚀 로그인 화면으로 이동 완료');
+      // 성공 메시지 표시 (짧게)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              '로그아웃되었습니다',
+              style: TextStyle(color: AppColors.white),
+            ),
+            backgroundColor: AppColors.success,
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+      
+      // 잠시 대기 후 로그인 화면으로 이동
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (mounted) {
+        context.go('/login');
+        print('🚀 로그인 화면으로 이동 완료');
+      }
+      
+    } catch (error) {
+      print('❌ 로그아웃 처리 중 오류: $error');
+      
+      // 에러가 발생해도 로그인 화면으로 이동
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              '로그아웃 중 오류가 발생했지만 로그아웃되었습니다',
+              style: TextStyle(color: AppColors.white),
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        
+        // 에러가 발생해도 로그인 화면으로 이동
+        context.go('/login');
+      }
+    } finally {
+      // 로딩 상태 종료
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  // 🔥 강력한 로그아웃 (소셜 계정 연결까지 끊기) - 선택적 기능
+  Future<void> _handleCompleteLogout() async {
+    print('🔗 완전 로그아웃 (연결 끊기 포함) 시작');
+    
+    final confirmed = await DialogHelper.showConfirmDialog(
+      context,
+      '소셜 로그인 계정과의 연결을 완전히 끊으시겠습니까?\n\n이 작업은 되돌릴 수 없으며, 다시 로그인하려면 소셜 로그인을 다시 연동해야 합니다.',
+      title: '계정 연결 끊기',
+      confirmText: '연결 끊기',
+      cancelText: '취소',
+    );
+
+    if (!confirmed || !mounted) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final authProvider = context.read<AuthProvider>();
+      
+      // 소셜 계정 연결 끊기
+      await authProvider.unlinkSocialAccounts();
+      print('✅ 소셜 계정 연결 끊기 완료');
+      
+      // 일반 로그아웃도 함께 수행
+      await _handleLogout();
+      
+    } catch (error) {
+      print('❌ 계정 연결 끊기 실패: $error');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '계정 연결 끊기에 실패했습니다: $error',
+              style: const TextStyle(color: AppColors.white),
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -250,41 +367,144 @@ class _DashboardScreenState extends State<DashboardScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
-          _buildLogoutButton(),
+          
+          // 🔥 로그아웃 버튼들 (일반 로그아웃과 완전 로그아웃)
+          _buildLogoutButtons(),
         ],
       ),
     );
   }
 
-  Widget _buildLogoutButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _handleLogout,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFFEBEE),
-          foregroundColor: const Color(0xFFE03131),
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
-          ),
-          elevation: 0,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+  // 🔥 로그아웃 버튼들을 빌드하는 새로운 메소드
+  Widget _buildLogoutButtons() {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        final user = authProvider.currentUser;
+        final isSocialLogin = user?.loginType != 'normal';
+        
+        return Column(
           children: [
-            const Icon(Icons.logout, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              AppStrings.logout,
-              style: TextStyle(
-                fontSize: AppDimensions.fontSizeRegular,
-                fontWeight: FontWeight.w600,
+            // 일반 로그아웃 버튼
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _handleLogout,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFEBEE),
+                  foregroundColor: const Color(0xFFE03131),
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                  ),
+                  elevation: 0,
+                ),
+                child: _isLoading 
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE03131)),
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.logout, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          AppStrings.logout,
+                          style: TextStyle(
+                            fontSize: AppDimensions.fontSizeRegular,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
               ),
             ),
+            
+            // 🔥 소셜 로그인 사용자에게만 완전 로그아웃 버튼 표시
+            if (isSocialLogin) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _isLoading ? null : _handleCompleteLogout,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFE03131),
+                    side: const BorderSide(color: Color(0xFFE03131)),
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.link_off, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${_getLoginMethodText(user?.loginType ?? 'normal')} 연결 끊기',
+                        style: TextStyle(
+                          fontSize: AppDimensions.fontSizeRegular,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // 🔥 소셜 로그인 안내 텍스트
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '소셜 로그인 안내',
+                            style: TextStyle(
+                              fontSize: AppDimensions.fontSizeSmall,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '• 일반 로그아웃: ${_getLoginMethodText(user?.loginType ?? 'normal')}에서 로그아웃되고 우리 서비스에서도 로그아웃됩니다.\n'
+                      '• 연결 끊기: ${_getLoginMethodText(user?.loginType ?? 'normal')}과의 연결을 완전히 끊습니다. (되돌릴 수 없음)',
+                      style: TextStyle(
+                        fontSize: AppDimensions.fontSizeSmall,
+                        color: AppColors.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
