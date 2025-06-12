@@ -101,4 +101,59 @@ class StorageHelper {
       removeLoginFailCount(),
     ]);
   }
+
+  // 🔥 모든 소셜 로그인 관련 데이터 강제 삭제 (Android 전용)
+static Future<void> clearAllSocialLoginData() async {
+  print('🧹 StorageHelper: 모든 소셜 로그인 데이터 강제 삭제 시작');
+  
+  try {
+    // 1. 우리 앱의 모든 SharedPreferences 파일들 확인
+    final allKeys = prefs.getKeys();
+    print('📋 현재 저장된 모든 키: $allKeys');
+    
+    // 2. 소셜 로그인 관련 키 패턴들
+    final socialPatterns = [
+      'kakao', 'naver', 'google', 'facebook', 'apple',
+      'oauth', 'token', 'auth', 'social', 'login',
+      'access', 'refresh', 'session', 'credential'
+    ];
+    
+    int deletedCount = 0;
+    
+    // 3. 패턴 매칭으로 삭제
+    for (String key in allKeys.toList()) {
+      for (String pattern in socialPatterns) {
+        if (key.toLowerCase().contains(pattern)) {
+          await prefs.remove(key);
+          print('🗑️ 삭제된 키: $key');
+          deletedCount++;
+          break;
+        }
+      }
+    }
+    
+    print('✅ StorageHelper: 총 ${deletedCount}개의 소셜 로그인 관련 키 삭제 완료');
+    
+  } catch (e) {
+    print('❌ StorageHelper: 소셜 로그인 데이터 삭제 실패: $e');
+  }
+}
+
+// 🔥 완전한 앱 데이터 초기화 (핵옵션)
+static Future<void> nuclearClear() async {
+  print('💥 StorageHelper: 핵옵션 - 모든 앱 데이터 완전 삭제');
+  
+  try {
+    // 모든 SharedPreferences 데이터 삭제
+    await prefs.clear();
+    print('✅ 모든 SharedPreferences 데이터 삭제 완료');
+    
+    // 재초기화
+    await init();
+    print('✅ StorageHelper 재초기화 완료');
+    
+  } catch (e) {
+    print('❌ 핵옵션 실패: $e');
+  }
+}
 }
