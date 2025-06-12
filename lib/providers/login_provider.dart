@@ -21,6 +21,8 @@ import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'auth_provider.dart';
 
+// lib/providers/login_provider.dart 파일에서 수정할 부분들
+
 class LoginProvider extends ChangeNotifier {
   final AuthRepository _authRepository = AuthRepository();
 
@@ -33,8 +35,10 @@ class LoginProvider extends ChangeNotifier {
   final FocusNode usernameFocusNode = FocusNode();
   final FocusNode passwordFocusNode = FocusNode();
 
-  // State variables
-  bool _isLoading = false;
+  // 🔥 로딩 상태를 분리해서 관리하기
+  bool _isGeneralLoading = false;    // 일반 로그인 로딩
+  bool _isKakaoLoading = false;      // 카카오 로그인 로딩
+  bool _isNaverLoading = false;      // 네이버 로그인 로딩
   bool _isFormValid = false;
   bool _rememberMe = false;
   bool _ipSecurity = false;
@@ -52,8 +56,11 @@ class LoginProvider extends ChangeNotifier {
   // Context for AuthProvider access
   BuildContext? _context;
 
-  // Getters
-  bool get isLoading => _isLoading;
+  // 🔥 각각의 로딩 상태를 확인하는 getter들
+  bool get isGeneralLoading => _isGeneralLoading;
+  bool get isKakaoLoading => _isKakaoLoading;
+  bool get isNaverLoading => _isNaverLoading;
+  bool get isAnyLoading => _isGeneralLoading || _isKakaoLoading || _isNaverLoading;
   bool get isFormValid => _isFormValid;
   bool get rememberMe => _rememberMe;
   bool get ipSecurity => _ipSecurity;
@@ -65,6 +72,9 @@ class LoginProvider extends ChangeNotifier {
   String get passwordError => _passwordError;
   String get captchaError => _captchaError;
   bool get mounted => _mounted;
+
+  // 🔥 기존의 isLoading getter는 호환성을 위해 남겨두되 isAnyLoading으로 변경
+  bool get isLoading => isAnyLoading;
 
   @override
   void dispose() {
@@ -176,9 +186,14 @@ class LoginProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 🔥 메인 로그인 함수 (기존과 동일)
   Future<bool> login() async {
     print('🚀 LoginProvider.login() 시작');
+    
+    // 🔥 다른 로그인이 진행 중인지 확인
+    if (_isKakaoLoading || _isNaverLoading) {
+      print('⚠️ 다른 로그인이 진행 중입니다. 일반 로그인을 건너뜁니다.');
+      return false;
+    }
     
     // 유효성 검사
     print('🔍 유효성 검사 시작');
@@ -199,7 +214,8 @@ class LoginProvider extends ChangeNotifier {
       return false;
     }
 
-    _isLoading = true;
+    // 🔥 일반 로그인 로딩 상태만 true로 설정
+    _isGeneralLoading = true;
     _clearErrors();
     notifyListeners();
 
@@ -257,7 +273,8 @@ class LoginProvider extends ChangeNotifier {
       return false;
     } finally {
       print('🏁 LoginProvider 로그인 처리 완료');
-      _isLoading = false;
+      // 🔥 일반 로그인 로딩 상태만 false로 설정
+      _isGeneralLoading = false;
       notifyListeners();
     }
   }
@@ -294,10 +311,19 @@ class LoginProvider extends ChangeNotifier {
     captchaController.clear();
   }
 
-  // 🔥 카카오 로그인 (기존과 동일)
   Future<void> kakaoLogin() async {
     print('📱 카카오 로그인 시작');
-    _isLoading = true;
+    
+    // 🔥 다른 로그인이 진행 중인지 확인
+    if (_isGeneralLoading || _isNaverLoading) {
+      print('⚠️ 다른 로그인이 진행 중입니다. 카카오 로그인을 건너뜁니다.');
+      _errorMessage = '다른 로그인이 진행 중입니다. 잠시 후 다시 시도해주세요.';
+      notifyListeners();
+      return;
+    }
+    
+    // 🔥 카카오 로그인 로딩 상태만 true로 설정
+    _isKakaoLoading = true;
     _clearErrors();
     notifyListeners();
 
@@ -326,15 +352,26 @@ class LoginProvider extends ChangeNotifier {
         _errorMessage = '카카오 로그인 중 오류가 발생했습니다: ${error.toString()}';
       }
     } finally {
-      _isLoading = false;
+      // 🔥 카카오 로그인 로딩 상태만 false로 설정
+      _isKakaoLoading = false;
       notifyListeners();
     }
   }
 
-  // 🔥 네이버 로그인 (기존과 동일)
+
   Future<void> naverLogin() async {
     print('📱 === 네이버 로그인 시작 ===');
-    _isLoading = true;
+    
+    // 🔥 다른 로그인이 진행 중인지 확인
+    if (_isGeneralLoading || _isKakaoLoading) {
+      print('⚠️ 다른 로그인이 진행 중입니다. 네이버 로그인을 건너뜁니다.');
+      _errorMessage = '다른 로그인이 진행 중입니다. 잠시 후 다시 시도해주세요.';
+      notifyListeners();
+      return;
+    }
+    
+    // 🔥 네이버 로그인 로딩 상태만 true로 설정
+    _isNaverLoading = true;
     _clearErrors();
     notifyListeners();
 
@@ -357,12 +394,13 @@ class LoginProvider extends ChangeNotifier {
       print('💥 네이버 로그인 오류: $error');
       _errorMessage = '네이버 로그인 중 오류가 발생했습니다.';
     } finally {
-      _isLoading = false;
+      // 🔥 네이버 로그인 로딩 상태만 false로 설정
+      _isNaverLoading = false;
       notifyListeners();
     }
   }
 
-  // 🔥 네이버 앱 설치 여부 확인 (기존과 동일)
+  // 🔥 네이버 앱 설치 여부 확인
   Future<bool> _checkNaverAppInstalled() async {
     try {
       print('📱 네이버 SDK 상태 확인...');
@@ -382,7 +420,7 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
-  // 🔥 네이버 앱 설치 안내 다이얼로그 (기존과 동일)
+  // 🔥 네이버 앱 설치 안내 다이얼로그
   Future<void> _showNaverAppInstallDialog() async {
     if (_context == null) return;
     
@@ -412,7 +450,7 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
-  // 🔥 플레이스토어에서 네이버 앱 열기 (기존과 동일)
+  // 🔥 플레이스토어에서 네이버 앱 열기
   Future<void> _openNaverAppInPlayStore() async {
     try {
       print('🏪 플레이스토어에서 네이버 앱 열기...');
@@ -435,7 +473,7 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
-  // 🔥 실제 네이버 로그인 수행 (기존과 동일)
+  // 🔥 실제 네이버 로그인 수행
   Future<void> _performNaverLogin() async {
     try {
       print('🚀 네이버 로그인 실행...');
@@ -465,7 +503,7 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
-  // 🔥 카카오 토큰을 서버로 전송 (기존과 동일)
+  // 🔥 카카오 토큰을 서버로 전송
   Future<void> _sendKakaoTokenToBackend(String kakaoAccessToken) async {
     try {
       print('📡 서버로 카카오 토큰 전송 중...');
@@ -496,7 +534,7 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
-  // 🔥 네이버 토큰을 서버로 전송 (기존과 동일)
+  // 🔥 네이버 토큰을 서버로 전송
   Future<void> _sendNaverTokenToBackend(String naverAccessToken) async {
     try {
       print('📡 서버로 네이버 토큰 전송 중...');
@@ -548,7 +586,7 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
-  // 🔥 소셜 로그인 성공 처리 (기존과 동일)
+  // 🔥 소셜 로그인 성공 처리
   Future<void> _handleSocialLoginSuccess(Map<String, dynamic> authResponse, String loginType) async {
     print('🎉 소셜 로그인 성공 처리 시작: $loginType');
     print('📊 서버 응답 구조: ${authResponse.keys}');
@@ -614,9 +652,29 @@ class LoginProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 로딩 상태 설정 (외부에서 호출용)
+  // 🔥 각각의 로딩 상태 설정 함수들
+  void setGeneralLoading(bool loading) {
+    _isGeneralLoading = loading;
+    notifyListeners();
+  }
+
+  void setKakaoLoading(bool loading) {
+    _isKakaoLoading = loading;
+    notifyListeners();
+  }
+
+  void setNaverLoading(bool loading) {
+    _isNaverLoading = loading;
+    notifyListeners();
+  }
+
+  // 기존 setLoading은 호환성을 위해 남겨두되 모든 로딩을 false로 설정
   void setLoading(bool loading) {
-    _isLoading = loading;
+    if (!loading) {
+      _isGeneralLoading = false;
+      _isKakaoLoading = false;
+      _isNaverLoading = false;
+    }
     notifyListeners();
   }
 
@@ -627,6 +685,10 @@ class LoginProvider extends ChangeNotifier {
     _resetLoginForm();
     _loginFailCount = 0;
     _showCaptcha = false;
+    // 🔥 모든 로딩 상태 초기화
+    _isGeneralLoading = false;
+    _isKakaoLoading = false;
+    _isNaverLoading = false;
     notifyListeners();
   }
 }

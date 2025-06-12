@@ -1,37 +1,56 @@
-// lib/presentation/widgets/login/social_login_buttons.dart
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
 class SocialLoginButtons extends StatelessWidget {
   final VoidCallback onKakaoLogin;
   final VoidCallback onNaverLogin;
-  final bool isLoading;
+  // 🔥 각각의 로딩 상태를 받는 변수들
+  final bool isKakaoLoading;
+  final bool isNaverLoading;
+  // 🔥 일반 로그인 로딩 상태도 받기
+  final bool isGeneralLoading;
 
   const SocialLoginButtons({
     super.key,
     required this.onKakaoLogin,
     required this.onNaverLogin,
-    this.isLoading = false,
+    // 🔥 각각의 로딩 상태를 받도록 수정
+    this.isKakaoLoading = false,
+    this.isNaverLoading = false,
+    this.isGeneralLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    // 🔥 다른 로그인이 진행 중인지 확인하는 변수들
+    final isKakaoDisabled = isKakaoLoading || isNaverLoading || isGeneralLoading;
+    final isNaverDisabled = isNaverLoading || isKakaoLoading || isGeneralLoading;
+    
     return Column(
       children: [
-        // 카카오 로그인 버튼 (이미지 사용하되 비율 조정)
+        // 카카오 로그인 버튼
         SizedBox(
           width: double.infinity,
           height: 45,
           child: ElevatedButton(
-            onPressed: isLoading ? null : onKakaoLogin,
+            // 🔥 카카오가 비활성화되어야 할 때 null 전달
+            onPressed: isKakaoDisabled ? null : onKakaoLogin,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFE812),
-              foregroundColor: const Color(0xFF3C1E1E),
+              // 🔥 비활성화될 때 색상 변경
+              backgroundColor: isKakaoDisabled 
+                  ? const Color(0xFFE0E0E0) 
+                  : const Color(0xFFFFE812),
+              foregroundColor: isKakaoDisabled 
+                  ? const Color(0xFF9E9E9E) 
+                  : const Color(0xFF3C1E1E),
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(6),
               ),
               padding: EdgeInsets.zero,
+              // 🔥 비활성화 상태 스타일
+              disabledBackgroundColor: const Color(0xFFE0E0E0),
+              disabledForegroundColor: const Color(0xFF9E9E9E),
             ),
             child: Container(
               width: double.infinity,
@@ -43,17 +62,21 @@ class SocialLoginButtons extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
                 child: Stack(
                   children: [
-                    // 카카오 이미지 (비율 조정해서 잘리지 않게)
+                    // 카카오 이미지
                     Center(
-                      child: Image.asset(
-                        'assets/images/kakao_login_large_wide.png',
-                        width: double.infinity,
-                        height: 40, // 높이를 좀 더 키움 (35 → 40)
-                        fit: BoxFit.contain, // contain으로 변경해서 비율 유지
+                      child: Opacity(
+                        // 🔥 비활성화될 때 투명도 조절
+                        opacity: isKakaoDisabled ? 0.5 : 1.0,
+                        child: Image.asset(
+                          'assets/images/kakao_login_large_wide.png',
+                          width: double.infinity,
+                          height: 40,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
-                    // 로딩 표시
-                    if (isLoading)
+                    // 🔥 카카오 로딩 표시 (카카오 로딩일 때만)
+                    if (isKakaoLoading)
                       const Center(
                         child: SizedBox(
                           width: 20,
@@ -61,6 +84,25 @@ class SocialLoginButtons extends StatelessWidget {
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                          ),
+                        ),
+                      ),
+                    // 🔥 다른 로그인 진행 중일 때 표시
+                    if (isNaverLoading || isGeneralLoading)
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            '대기 중',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ),
@@ -72,18 +114,25 @@ class SocialLoginButtons extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         
-        // 네이버 로그인 버튼 (Vue.js 스타일로 N을 왼쪽에 크게)
+        // 네이버 로그인 버튼
         GestureDetector(
-          onTap: isLoading ? null : onNaverLogin,
+          // 🔥 네이버가 비활성화되어야 할 때 null 전달
+          onTap: isNaverDisabled ? null : onNaverLogin,
           child: Container(
             width: double.infinity,
             height: 45,
             decoration: BoxDecoration(
-              color: const Color(0xFF03C75A), // 네이버 초록색
+              // 🔥 비활성화될 때 색상 변경
+              color: isNaverDisabled 
+                  ? const Color(0xFFE0E0E0) 
+                  : const Color(0xFF03C75A),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: isLoading
-                ? const Center(
+            child: Stack(
+              children: [
+                // 🔥 네이버 로딩일 때만 로딩 표시
+                if (isNaverLoading)
+                  const Center(
                     child: SizedBox(
                       width: 20,
                       height: 20,
@@ -93,43 +142,74 @@ class SocialLoginButtons extends StatelessWidget {
                       ),
                     ),
                   )
-                : Row(
-                    children: [
-                      const SizedBox(width: 12), // 왼쪽 여백을 더 줄임 (20 → 12)
-                      // 네이버 N 로고 (크고 볼드하게)
-                      Container(
-                        width: 24, // 로고 크기 줄임 (28 → 24)
-                        height: 24, // 로고 크기 줄임 (28 → 24)
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(4),
+                // 🔥 다른 로그인 진행 중일 때 표시
+                else if (isKakaoLoading || isGeneralLoading)
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        '대기 중',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
-                        child: const Center(
-                          child: Text(
-                            'N',
-                            style: TextStyle(
-                              fontSize: 16, // 글자도 조금 줄임 (18 → 16)
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF03C75A),
+                      ),
+                    ),
+                  )
+                // 🔥 일반 상태일 때 네이버 버튼 내용
+                else
+                  Opacity(
+                    // 🔥 비활성화될 때 투명도 조절
+                    opacity: isNaverDisabled ? 0.5 : 1.0,
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 12),
+                        // 네이버 N 로고
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'N',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: isNaverDisabled 
+                                    ? const Color(0xFF9E9E9E)
+                                    : const Color(0xFF03C75A),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const Expanded(
-                        child: Center(
-                          child: Text(
-                            '네이버 로그인',
-                            style: TextStyle(
-                              fontSize: 14, // 글자 크기 줄임 (16 → 14)
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.white,
+                        Expanded(
+                          child: Center(
+                            child: Text(
+                              '네이버 로그인',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: isNaverDisabled 
+                                    ? const Color(0xFF9E9E9E)
+                                    : AppColors.white,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 40), // 오른쪽 여백 조정 (48 → 40)
-                    ],
+                        const SizedBox(width: 40),
+                      ],
+                    ),
                   ),
+              ],
+            ),
           ),
         ),
       ],

@@ -359,24 +359,33 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildLoginButton() {
-    return Consumer<LoginProvider>(
-      builder: (context, loginProvider, child) {
-        print('🎯 로그인 버튼 빌드 - isFormValid: ${loginProvider.isFormValid}, isLoading: ${loginProvider.isLoading}');
-        
-        return CustomButton(
-          text: loginProvider.isLoading ? AppStrings.loginLoading : AppStrings.login,
-          onPressed: () {
-            print('🔴 로그인 버튼 클릭됨!');
-            _handleLogin();
-          },
-          isLoading: loginProvider.isLoading,
-          isActive: loginProvider.isFormValid && !loginProvider.isLoading,
-        );
-      },
-    );
-  }
-
+Widget _buildLoginButton() {
+  return Consumer<LoginProvider>(
+    builder: (context, loginProvider, child) {
+      // 🔥 다른 로그인이 진행 중인지 확인
+      final isOtherLoginInProgress = loginProvider.isKakaoLoading || loginProvider.isNaverLoading;
+      
+      print('🎯 로그인 버튼 빌드:');
+      print('  - isFormValid: ${loginProvider.isFormValid}');
+      print('  - isGeneralLoading: ${loginProvider.isGeneralLoading}');
+      print('  - isOtherLoginInProgress: $isOtherLoginInProgress');
+      
+      return CustomButton(
+        text: loginProvider.isGeneralLoading ? AppStrings.loginLoading : AppStrings.login,
+        onPressed: () {
+          print('🔴 로그인 버튼 클릭됨!');
+          _handleLogin();
+        },
+        // 🔥 일반 로그인 로딩 상태만 사용
+        isLoading: loginProvider.isGeneralLoading,
+        // 🔥 폼이 유효하고, 일반 로그인이 로딩 중이 아니고, 다른 로그인도 진행 중이 아닐 때만 활성화
+        isActive: loginProvider.isFormValid && 
+                 !loginProvider.isGeneralLoading && 
+                 !isOtherLoginInProgress,
+      );
+    },
+  );
+}
   Widget _buildMessages() {
     return Consumer<LoginProvider>(
       builder: (context, loginProvider, child) {
@@ -401,22 +410,26 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSocialLogin() {
-    return Consumer<LoginProvider>(
-      builder: (context, loginProvider, child) {
-        return Column(
-          children: [
-            const SizedBox(height: 32),
-            const DividerWithText(text: AppStrings.or),
-            const SizedBox(height: 24),
-            SocialLoginButtons(
-              onKakaoLogin: loginProvider.kakaoLogin,
-              onNaverLogin: loginProvider.naverLogin,
-              isLoading: loginProvider.isLoading,
-            ),
-          ],
-        );
-      },
-    );
-  }
+Widget _buildSocialLogin() {
+  return Consumer<LoginProvider>(
+    builder: (context, loginProvider, child) {
+      return Column(
+        children: [
+          const SizedBox(height: 32),
+          const DividerWithText(text: AppStrings.or),
+          const SizedBox(height: 24),
+          // 🔥 모든 로딩 상태를 전달
+          SocialLoginButtons(
+            onKakaoLogin: loginProvider.kakaoLogin,
+            onNaverLogin: loginProvider.naverLogin,
+            // 🔥 각각의 로딩 상태를 분리해서 전달
+            isKakaoLoading: loginProvider.isKakaoLoading,
+            isNaverLoading: loginProvider.isNaverLoading,
+            isGeneralLoading: loginProvider.isGeneralLoading,
+          ),
+        ],
+      );
+    },
+  );
+}
 }
