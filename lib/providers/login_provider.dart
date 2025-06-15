@@ -311,9 +311,9 @@ class LoginProvider extends ChangeNotifier {
     captchaController.clear();
   }
 
-// 🔥 카카오 로그인 (강제로 새로운 계정 선택하게 만들기)
+// 🔥 카카오 로그인 (빠른 버전 - 최적화됨)
   Future<void> kakaoLogin() async {
-    print('📱 카카오 로그인 시작');
+    print('📱 카카오 로그인 시작 - 빠른 모드');
 
     // 🔥 다른 로그인이 진행 중인지 확인
     if (_isGeneralLoading || _isNaverLoading) {
@@ -329,38 +329,44 @@ class LoginProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 🔥 방법 1: 카카오 SDK 완전 초기화
+      print('🧹 카카오 토큰 빠른 삭제');
+
+      // 🔥 빠른 토큰 삭제 (안전한 방법)
       try {
-        await UserApi.instance.logout();
-        print('🚪 1단계: 카카오 로그아웃 완료');
-
-        await UserApi.instance.unlink();
-        print('🔗 2단계: 카카오 연결 해제 완료');
-
-      } catch (e) {
-        print('⚠️ 카카오 정리 과정에서 오류 (계속 진행): $e');
-      }
-
-      // 🔥 방법 2: 웹뷰 캐시 삭제 (Android만 해당)
-      if (!kIsWeb) {
+        // 로그아웃 시도 (에러 무시)
         try {
-          // Android 웹뷰 캐시 삭제를 위한 딜레이
-          await Future.delayed(const Duration(milliseconds: 1000));
-          print('🧹 웹뷰 캐시 정리 대기 완료');
+          await UserApi.instance.logout();
+          print('✅ 카카오 로그아웃 완료');
         } catch (e) {
-          print('⚠️ 웹뷰 캐시 정리 실패: $e');
+          print('ℹ️ 로그아웃 에러 (무시): $e');
         }
+
+        // 토큰 삭제 시도 (에러 무시)
+        try {
+          await TokenManagerProvider.instance.manager.clear();
+          print('✅ 카카오 토큰 삭제 완료');
+        } catch (e) {
+          print('ℹ️ 토큰 삭제 에러 (무시): $e');
+        }
+
+        print('✅ 카카오 데이터 정리 완료');
+      } catch (e) {
+        print('ℹ️ 카카오 데이터 삭제 과정: $e');
       }
 
-      // 🔥 방법 3: 강제로 웹 브라우저 로그인 사용 (카카오톡 앱 우회)
-      print('🌐 웹 브라우저로 강제 새로 로그인 (카카오톡 앱 우회)');
+      print('🚀 강제 재인증 로그인 시작');
 
-      // 카카오톡 앱이 설치되어 있어도 웹 브라우저로 로그인 강제
-      OAuthToken token = await UserApi.instance.loginWithKakaoAccount();
+      // 🔥 즉시 강제 재인증 로그인 (대기시간 없음)
+      OAuthToken token = await UserApi.instance.loginWithKakaoAccount(
+        prompts: [Prompt.login], // 강제 재인증
+      );
 
-      print('✅ 새로운 카카오 토큰 받음: ${token.accessToken.substring(0, 20)}...');
+      print('✅ 카카오 토큰 받음: ${token.accessToken.substring(0, 20)}...');
 
+      // 🔥 서버로 토큰 전송
       await _sendKakaoTokenToBackend(token.accessToken);
+
+      print('🎉 카카오 로그인 완료!');
 
     } catch (error) {
       print('❌ 카카오 로그인 실패: $error');
