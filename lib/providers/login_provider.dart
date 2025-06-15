@@ -98,10 +98,10 @@ class LoginProvider extends ChangeNotifier {
     usernameController.clear();
     passwordController.clear();
     captchaController.clear();
-    
+
     _clearErrors();
     _validateForm();
-    
+
     print('✅ 입력 필드 초기화 완료');
   }
 
@@ -112,18 +112,18 @@ class LoginProvider extends ChangeNotifier {
     _rememberMe = _authRepository.getRememberMe();
     _ipSecurity = _authRepository.getIpSecurity();
     _showCaptcha = _loginFailCount >= 3;
-    
+
     print('📊 초기 상태:');
     print('  - loginFailCount: $_loginFailCount');
     print('  - rememberMe: $_rememberMe');
     print('  - ipSecurity: $_ipSecurity');
     print('  - showCaptcha: $_showCaptcha');
-    
+
     // 리스너 추가
     usernameController.addListener(_validateForm);
     passwordController.addListener(_validateForm);
     captchaController.addListener(_validateForm);
-    
+
     notifyListeners();
     print('✅ LoginProvider.init() 완료');
   }
@@ -136,11 +136,11 @@ class LoginProvider extends ChangeNotifier {
       captcha: captchaController.text,
       showCaptcha: _showCaptcha,
     );
-    
+
     if (_isFormValid) {
       _clearErrors();
     }
-    
+
     notifyListeners();
   }
 
@@ -188,13 +188,13 @@ class LoginProvider extends ChangeNotifier {
 
   Future<bool> login() async {
     print('🚀 LoginProvider.login() 시작');
-    
+
     // 🔥 다른 로그인이 진행 중인지 확인
     if (_isKakaoLoading || _isNaverLoading) {
       print('⚠️ 다른 로그인이 진행 중입니다. 일반 로그인을 건너뜁니다.');
       return false;
     }
-    
+
     // 유효성 검사
     print('🔍 유효성 검사 시작');
     validateUsername();
@@ -239,7 +239,7 @@ class LoginProvider extends ChangeNotifier {
 
       if (response.success && response.data != null) {
         print('✅ 로그인 성공!');
-        
+
         // 🔥 AuthProvider에 사용자 정보 설정
         if (_context != null) {
           try {
@@ -252,13 +252,13 @@ class LoginProvider extends ChangeNotifier {
         } else {
           print('⚠️ Context가 null입니다');
         }
-        
+
         _successMessage = response.message ?? AppStrings.loginSuccess;
         print('💬 성공 메시지 설정: $_successMessage');
-        
+
         // 로그인 성공 시 폼 초기화
         _resetLoginForm();
-        
+
         notifyListeners();
         return true;
       } else {
@@ -282,18 +282,18 @@ class LoginProvider extends ChangeNotifier {
   // 로그인 실패 처리
   void _handleLoginFailure(String message) {
     print('🔥 로그인 실패 처리: $message');
-    
+
     usernameController.clear();
     passwordController.clear();
-    
+
     _loginFailCount = _authRepository.getLoginFailCount();
     print('📊 현재 실패 횟수: $_loginFailCount');
-    
+
     if (_loginFailCount >= 3) {
       _showCaptcha = true;
       print('🔒 캡차 표시 활성화');
     }
-    
+
     if (message.contains('캡차') || message.contains('자동입력')) {
       _captchaError = message;
       print('🎯 캡차 에러 설정: $_captchaError');
@@ -391,8 +391,8 @@ class LoginProvider extends ChangeNotifier {
 
 
   Future<void> naverLogin() async {
-    print('📱 === 네이버 로그인 시작 ===');
-    
+    print('📱 네이버 로그인 시작 - 카카오 방식과 동일');
+
     // 🔥 다른 로그인이 진행 중인지 확인
     if (_isGeneralLoading || _isKakaoLoading) {
       print('⚠️ 다른 로그인이 진행 중입니다. 네이버 로그인을 건너뜁니다.');
@@ -400,30 +400,75 @@ class LoginProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    
+
     // 🔥 네이버 로그인 로딩 상태만 true로 설정
     _isNaverLoading = true;
     _clearErrors();
     notifyListeners();
 
     try {
-      print('🔍 네이버 앱 설치 상태 확인 중...');
-      
-      bool isNaverAppInstalled = await _checkNaverAppInstalled();
-      
-      if (!isNaverAppInstalled) {
-        print('❌ 네이버 앱이 설치되지 않음');
-        await _showNaverAppInstallDialog();
-        return;
+      print('🧹 네이버 토큰 빠른 삭제');
+
+      // 🔥 빠른 토큰 삭제 (카카오와 동일한 방식)
+      try {
+        // 로그아웃 시도 (에러 무시)
+        try {
+          await FlutterNaverLogin.logOut();
+          print('✅ 네이버 로그아웃 완료');
+        } catch (e) {
+          print('ℹ️ 로그아웃 에러 (무시): $e');
+        }
+
+        // 토큰 삭제 시도 (에러 무시)
+        try {
+          await FlutterNaverLogin.logOutAndDeleteToken();
+          print('✅ 네이버 토큰 삭제 완료');
+        } catch (e) {
+          print('ℹ️ 토큰 삭제 에러 (무시): $e');
+        }
+
+        print('✅ 네이버 데이터 정리 완료');
+      } catch (e) {
+        print('ℹ️ 네이버 데이터 삭제 과정: $e');
       }
-      
-      print('✅ 네이버 앱이 설치되어 있음 - 로그인 진행');
-      
-      await _performNaverLogin();
-      
+
+      print('🚀 강제 재인증 로그인 시작');
+
+      // 🔥 즉시 강제 재인증 로그인 (카카오와 동일한 방식, 대기시간 없음)
+      final result = await FlutterNaverLogin.logIn();
+
+      print('📊 네이버 로그인 결과: ${result.status}');
+
+      if (result.status == NaverLoginStatus.loggedIn) {
+        print('✅ 네이버 로그인 성공!');
+
+        final token = await FlutterNaverLogin.getCurrentAccessToken();
+        print('✅ 네이버 토큰 받음: ${token.accessToken.substring(0, 20)}...');
+
+        // 🔥 서버로 토큰 전송
+        await _sendNaverTokenToBackend(token.accessToken);
+
+        print('🎉 네이버 로그인 완료!');
+
+      } else {
+        print('❌ 네이버 로그인 실패: ${result.status}');
+        throw Exception('네이버 로그인이 실패했습니다.');
+      }
+
     } catch (error) {
-      print('💥 네이버 로그인 오류: $error');
-      _errorMessage = '네이버 로그인 중 오류가 발생했습니다.';
+      print('❌ 네이버 로그인 실패: $error');
+
+      String errorString = error.toString().toLowerCase();
+
+      if (errorString.contains('canceled') || errorString.contains('취소')) {
+        _errorMessage = '네이버 로그인이 취소되었습니다.';
+      } else if (errorString.contains('naverloginexception')) {
+        _errorMessage = '네이버 로그인 중 문제가 발생했습니다. 다시 시도해주세요.';
+      } else {
+        _errorMessage = '네이버 로그인 중 오류가 발생했습니다.';
+      }
+
+      print('🎯 설정된 에러 메시지: $_errorMessage');
     } finally {
       // 🔥 네이버 로그인 로딩 상태만 false로 설정
       _isNaverLoading = false;
@@ -434,17 +479,23 @@ class LoginProvider extends ChangeNotifier {
   // 🔥 네이버 앱 설치 여부 확인
   Future<bool> _checkNaverAppInstalled() async {
     try {
-      print('📱 네이버 SDK 상태 확인...');
-      
+      print('📱 네이버 앱 설치 여부 확인...');
+
+      // 먼저 로그아웃 상태로 만든 후 로그인 시도
+      await FlutterNaverLogin.logOut();
+
       final result = await FlutterNaverLogin.logIn();
-      
+
+      // 즉시 로그아웃 (테스트용이므로)
+      await FlutterNaverLogin.logOut();
+
       if (result.status == NaverLoginStatus.loggedOut) {
         print('⚠️ 네이버 앱이 설치되지 않았을 가능성');
         return false;
       }
-      
+
       return true;
-      
+
     } catch (e) {
       print('❌ 네이버 앱 확인 실패: $e');
       return false;
@@ -454,28 +505,35 @@ class LoginProvider extends ChangeNotifier {
   // 🔥 네이버 앱 설치 안내 다이얼로그
   Future<void> _showNaverAppInstallDialog() async {
     if (_context == null) return;
-    
+
     final result = await showDialog<bool>(
       context: _context!,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('네이버 앱 설치 필요'),
-          content: const Text('네이버 로그인을 위해서는 네이버 앱이 필요합니다.\nGoogle Play Store에서 네이버 앱을 설치하시겠습니까?'),
+          content: const Text(
+              '네이버 로그인을 위해서는 네이버 앱이 필요합니다.\n\n'
+                  '네이버 앱을 설치하시면:\n'
+                  '• 빠르고 안전한 로그인\n'
+                  '• 자동 로그인 방지 (매번 인증)\n'
+                  '• 향상된 보안\n\n'
+                  'Google Play Store에서 네이버 앱을 설치하시겠습니까?'
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('취소'),
+              child: const Text('나중에'),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('설치하기'),
+              child: const Text('설치하기', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         );
       },
     );
-    
+
     if (result == true) {
       await _openNaverAppInPlayStore();
     }
@@ -485,11 +543,11 @@ class LoginProvider extends ChangeNotifier {
   Future<void> _openNaverAppInPlayStore() async {
     try {
       print('🏪 플레이스토어에서 네이버 앱 열기...');
-      
+
       const naverAppUrl = 'https://play.google.com/store/apps/details?id=com.nhn.android.search';
-      
+
       final success = await UrlLauncherHelper.launchURL(naverAppUrl);
-      
+
       if (success) {
         print('✅ 플레이스토어 열기 성공');
         _successMessage = '플레이스토어에서 네이버 앱을 설치한 후 다시 시도해주세요.';
@@ -497,7 +555,7 @@ class LoginProvider extends ChangeNotifier {
         print('❌ 플레이스토어 열기 실패');
         _errorMessage = '플레이스토어를 열 수 없습니다. 수동으로 네이버 앱을 설치해주세요.';
       }
-      
+
     } catch (e) {
       print('💥 플레이스토어 열기 오류: $e');
       _errorMessage = '플레이스토어를 열 수 없습니다.';
@@ -508,26 +566,26 @@ class LoginProvider extends ChangeNotifier {
   Future<void> _performNaverLogin() async {
     try {
       print('🚀 네이버 로그인 실행...');
-      
+
       await FlutterNaverLogin.logOut();
-      
+
       final result = await FlutterNaverLogin.logIn();
-      
+
       print('📊 네이버 로그인 결과: ${result.status}');
-      
+
       if (result.status == NaverLoginStatus.loggedIn) {
         print('✅ 네이버 로그인 성공!');
-        
+
         final token = await FlutterNaverLogin.getCurrentAccessToken();
         print('🔑 토큰 획득 성공');
-        
+
         await _sendNaverTokenToBackend(token.accessToken);
-        
+
       } else {
         print('❌ 네이버 로그인 실패: ${result.status}');
         throw Exception('네이버 로그인 실패');
       }
-      
+
     } catch (e) {
       print('💥 네이버 로그인 수행 오류: $e');
       rethrow;
@@ -538,7 +596,7 @@ class LoginProvider extends ChangeNotifier {
   Future<void> _sendKakaoTokenToBackend(String kakaoAccessToken) async {
     try {
       print('📡 서버로 카카오 토큰 전송 중...');
-      
+
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/api/auth/social/kakao'),
         headers: {'Content-Type': 'application/json'},
@@ -551,9 +609,9 @@ class LoginProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final authResponse = json.decode(response.body);
-        
+
         await _handleSocialLoginSuccess(authResponse, 'kakao');
-        
+
       } else {
         throw Exception('서버 인증 실패: ${response.body}');
       }
@@ -570,7 +628,7 @@ class LoginProvider extends ChangeNotifier {
     try {
       print('📡 서버로 네이버 토큰 전송 중...');
       print('🔑 토큰: ${naverAccessToken.substring(0, 20)}...');
-      
+
       final response = await http.post(
         Uri.parse('${ApiConstants.baseUrl}/api/auth/social/naver'),
         headers: {
@@ -587,32 +645,32 @@ class LoginProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final authResponse = json.decode(response.body);
-        
+
         await _handleSocialLoginSuccess(authResponse, 'naver');
-        
+
       } else {
         String errorMessage = '서버 인증 실패';
-        
+
         try {
           final errorResponse = json.decode(response.body);
           errorMessage = errorResponse['message'] ?? errorMessage;
         } catch (e) {
           print('⚠️ 에러 응답 JSON 파싱 실패: $e');
         }
-        
+
         throw Exception('$errorMessage (코드: ${response.statusCode})');
       }
 
     } catch (e) {
       print('💥 서버 토큰 전송 실패: $e');
-      
-      if (e.toString().contains('SocketException') || 
+
+      if (e.toString().contains('SocketException') ||
           e.toString().contains('TimeoutException')) {
         _errorMessage = '서버 연결에 실패했습니다. 네트워크를 확인해주세요.';
       } else {
         _errorMessage = '로그인 처리 중 오류가 발생했습니다.';
       }
-      
+
       rethrow;
     }
   }
@@ -621,7 +679,7 @@ class LoginProvider extends ChangeNotifier {
   Future<void> _handleSocialLoginSuccess(Map<String, dynamic> authResponse, String loginType) async {
     print('🎉 소셜 로그인 성공 처리 시작: $loginType');
     print('📊 서버 응답 구조: ${authResponse.keys}');
-    
+
     // JWT 토큰 저장
     final jwtToken = authResponse['token'];
     if (jwtToken != null && jwtToken.isNotEmpty) {
@@ -630,34 +688,34 @@ class LoginProvider extends ChangeNotifier {
     } else {
       throw Exception('서버에서 토큰을 받지 못했습니다');
     }
-    
+
     // 사용자 정보 저장
     final userModel = UserModel(
       userId: authResponse['userId']?.toString() ?? '',
       username: authResponse['username']?.toString() ?? 'Unknown',
       loginType: loginType,
     );
-    
+
     await StorageHelper.setUserData(userModel.toJson());
     print('👤 사용자 정보 저장 완료: ${userModel.username}');
-    
+
     // 로그인 실패 횟수 초기화
     await StorageHelper.removeLoginFailCount();
-    
+
     // AuthProvider 업데이트
     if (_context != null) {
       final authProvider = Provider.of<AuthProvider>(_context!, listen: false);
       authProvider.setUser(userModel);
       print('🔄 AuthProvider 업데이트 완료');
     }
-    
+
     _successMessage = '${loginType == 'kakao' ? '카카오' : '네이버'} 로그인 성공!';
     print('🎉 $loginType 로그인 완료');
-    
+
     // 입력 필드 초기화
     clearInputFields();
     _resetLoginForm();
-    
+
     // 대시보드로 자동 이동
     if (_context != null && mounted) {
       print('🚀 대시보드로 자동 이동 시작');
