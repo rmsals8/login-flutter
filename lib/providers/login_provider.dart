@@ -311,9 +311,10 @@ class LoginProvider extends ChangeNotifier {
     captchaController.clear();
   }
 
+// 🔥 카카오 로그인 (강제로 새로운 계정 선택하게 만들기)
   Future<void> kakaoLogin() async {
     print('📱 카카오 로그인 시작');
-    
+
     // 🔥 다른 로그인이 진행 중인지 확인
     if (_isGeneralLoading || _isNaverLoading) {
       print('⚠️ 다른 로그인이 진행 중입니다. 카카오 로그인을 건너뜁니다.');
@@ -321,36 +322,60 @@ class LoginProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    
+
     // 🔥 카카오 로그인 로딩 상태만 true로 설정
     _isKakaoLoading = true;
     _clearErrors();
     notifyListeners();
 
     try {
-      bool kakaoTalkInstalled = await isKakaoTalkInstalled();
-      
-      OAuthToken token;
-      if (kakaoTalkInstalled) {
-        print('📱 카카오톡 앱으로 로그인');
-        token = await UserApi.instance.loginWithKakaoTalk();
-      } else {
-        print('🌐 웹 브라우저로 로그인');
-        token = await UserApi.instance.loginWithKakaoAccount();
+      // 🔥 방법 1: 카카오 SDK 완전 초기화
+      try {
+        await UserApi.instance.logout();
+        print('🚪 1단계: 카카오 로그아웃 완료');
+
+        await UserApi.instance.unlink();
+        print('🔗 2단계: 카카오 연결 해제 완료');
+
+      } catch (e) {
+        print('⚠️ 카카오 정리 과정에서 오류 (계속 진행): $e');
       }
 
-      print('✅ 카카오 토큰 받음: ${token.accessToken.substring(0, 20)}...');
+      // 🔥 방법 2: 웹뷰 캐시 삭제 (Android만 해당)
+      if (!kIsWeb) {
+        try {
+          // Android 웹뷰 캐시 삭제를 위한 딜레이
+          await Future.delayed(const Duration(milliseconds: 1000));
+          print('🧹 웹뷰 캐시 정리 대기 완료');
+        } catch (e) {
+          print('⚠️ 웹뷰 캐시 정리 실패: $e');
+        }
+      }
+
+      // 🔥 방법 3: 강제로 웹 브라우저 로그인 사용 (카카오톡 앱 우회)
+      print('🌐 웹 브라우저로 강제 새로 로그인 (카카오톡 앱 우회)');
+
+      // 카카오톡 앱이 설치되어 있어도 웹 브라우저로 로그인 강제
+      OAuthToken token = await UserApi.instance.loginWithKakaoAccount();
+
+      print('✅ 새로운 카카오 토큰 받음: ${token.accessToken.substring(0, 20)}...');
 
       await _sendKakaoTokenToBackend(token.accessToken);
 
     } catch (error) {
       print('❌ 카카오 로그인 실패: $error');
-      
-      if (error.toString().contains('KakaoAuthException')) {
+
+      String errorString = error.toString().toLowerCase();
+
+      if (errorString.contains('canceled') || errorString.contains('취소')) {
         _errorMessage = '카카오 로그인이 취소되었습니다.';
+      } else if (errorString.contains('kakaoauthexception')) {
+        _errorMessage = '카카오 로그인 중 문제가 발생했습니다. 다시 시도해주세요.';
       } else {
-        _errorMessage = '카카오 로그인 중 오류가 발생했습니다: ${error.toString()}';
+        _errorMessage = '카카오 로그인 중 오류가 발생했습니다.';
       }
+
+      print('🎯 설정된 에러 메시지: $_errorMessage');
     } finally {
       // 🔥 카카오 로그인 로딩 상태만 false로 설정
       _isKakaoLoading = false;

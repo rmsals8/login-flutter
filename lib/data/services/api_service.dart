@@ -124,21 +124,30 @@ class ApiService {
 
   // DELETE 요청
   Future<Response> delete(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-  }) async {
+      String path, {
+        dynamic data,
+        Map<String, dynamic>? queryParameters,
+        Options? options,
+      }) async {
     try {
+      print('🗑️ DELETE 요청 시작: $path');
+
+      // 🔥 토큰 상태 디버깅
+      final token = StorageHelper.getToken();
+      print('🔑 DELETE 요청 시 토큰: ${token != null ? "${token.substring(0, 20)}..." : "null"}');
+
       final response = await _dio.delete(
         path,
         data: data,
         queryParameters: queryParameters,
         options: options,
       );
+
+      print('✅ DELETE 요청 성공: ${response.statusCode}');
       return response;
     } catch (e) {
       print('💥 DELETE 요청 실패: $e');
+      print('📋 DELETE 에러 상세: ${e.toString()}');
       rethrow;
     }
   }

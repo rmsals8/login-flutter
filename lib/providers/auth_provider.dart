@@ -75,44 +75,32 @@ class AuthProvider extends ChangeNotifier {
   }
 
 // 🔥 완전히 새로 작성된 로그아웃 메소드 (핵옵션 포함)
-Future<void> logout() async {
-  print('🚪 AuthProvider 핵옵션 로그아웃 시작');
-  
-  try {
-    // 🔥 1. 소셜 로그인 플랫폼에서 로그아웃
-    await _logoutFromSocialPlatforms();
-    
-    // 🔥 2. 우리 서비스에서 로그아웃  
-    await _authRepository.logout();
-    
-    // 🔥 3. StorageHelper의 핵옵션 사용
-    await StorageHelper.nuclearClear();
-    
-    // 🔥 4. 추가 강제 삭제
-    await _additionalForceClear();
-    
-    // 🔥 5. 상태 초기화
-    _currentUser = null;
-    _isAuthenticated = false;
-    
-    if (!_disposed) {
+  Future<void> logout() async {
+    try {
+      print('🚪 AuthProvider 간단 로그아웃 시작');
+
+      // 🔥 1. 먼저 서버 로그아웃 API 호출 (토큰으로 카카오 로그아웃)
+      print('📡 서버 로그아웃 API 호출 (토큰 포함)');
+      await _authRepository.logout();
+      print('✅ 서버 로그아웃 완료');
+
+      // 🔥 2. 나중에 로컬 상태 업데이트
+      print('🧹 로컬 Provider 상태 업데이트');
+      _currentUser = null;
+      _isAuthenticated = false;
       notifyListeners();
-    }
-    
-    print('✅ AuthProvider 핵옵션 로그아웃 성공');
-    
-  } catch (e) {
-    print('❌ AuthProvider 핵옵션 로그아웃 오류: $e');
-    
-    // 오류가 발생해도 상태는 초기화
-    _currentUser = null;
-    _isAuthenticated = false;
-    
-    if (!_disposed) {
+      print('✅ AuthProvider 간단 로그아웃 완료');
+
+    } catch (e) {
+      print('💥 AuthProvider 로그아웃 중 오류: $e');
+
+      // 오류가 발생해도 로컬 상태는 초기화
+      _currentUser = null;
+      _isAuthenticated = false;
       notifyListeners();
+      print('🧹 오류 발생했지만 로컬 상태 초기화 완료');
     }
   }
-}
 
 // 🔥 추가 강제 삭제 메소드
 Future<void> _additionalForceClear() async {

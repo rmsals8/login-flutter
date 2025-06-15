@@ -5,7 +5,7 @@ import '../models/api_response.dart';
 import '../models/hello_response.dart';
 import '../../core/constants/api_constants.dart';
 import 'api_service.dart';
-
+import '../../core/utils/storage_helper.dart';
 class AuthService {
   final ApiService _apiService = ApiService();
 
@@ -95,13 +95,31 @@ class AuthService {
   // 로그아웃 API
   Future<ApiResponse<bool>> logout() async {
     try {
+      print('🚪 AuthService.logout() 시작');
+
+      // 🔥 토큰 상태 확인
+      final token = StorageHelper.getToken();
+      print('🔑 현재 저장된 토큰: ${token != null ? "${token.substring(0, 20)}..." : "null"}');
+      print('📍 토큰 존재 여부: ${token != null && token.isNotEmpty}');
+
+      print('📡 DELETE 요청 시작: ${ApiConstants.baseUrl}${ApiConstants.logoutEndpoint}');
+
       final response = await _apiService.delete(ApiConstants.logoutEndpoint);
+
+      print('✅ DELETE 응답 받음');
+      print('📊 응답 상태코드: ${response.statusCode}');
+      print('📦 응답 데이터: ${response.data}');
+
       if (response.statusCode == 200) {
+        print('🎉 서버 로그아웃 성공');
         return ApiResponse.success(true, message: '로그아웃 성공');
       } else {
+        print('❌ 서버 로그아웃 실패: ${response.statusCode}');
         return ApiResponse.error('로그아웃에 실패했습니다.');
       }
     } catch (e) {
+      print('💥 AuthService.logout() 예외: $e');
+      print('📋 예외 타입: ${e.runtimeType}');
       return ApiResponse.error(_handleError(e));
     }
   }

@@ -71,14 +71,41 @@ class AuthRepository {
     }
   }
 
-  // 로그아웃
   Future<ApiResponse<bool>> logout() async {
     try {
+      print('🚪 AuthRepository.logout() 시작');
 
+      // 🔥 1. 서버의 로그아웃 API 호출 (카카오 로그아웃 포함)
+      try {
+        print('📡 서버 로그아웃 API 호출 시작');
+        final response = await _authService.logout();
+        print('✅ 서버 로그아웃 API 응답: ${response.success}');
+
+        if (!response.success) {
+          print('⚠️ 서버 로그아웃 실패했지만 로컬 로그아웃은 진행: ${response.message}');
+        }
+      } catch (e) {
+        print('❌ 서버 로그아웃 API 호출 실패: $e');
+        print('🔄 로컬 로그아웃은 계속 진행');
+      }
+
+      // 🔥 2. 로컬 데이터 삭제 (서버 API 실패해도 항상 실행)
+      print('🧹 로컬 데이터 삭제 시작');
       await StorageHelper.clearAuthData();
+      print('✅ 로컬 데이터 삭제 완료');
+
       return ApiResponse.success(true, message: '로그아웃되었습니다.');
     } catch (e) {
-      await StorageHelper.clearAuthData();
+      print('💥 로그아웃 처리 중 오류: $e');
+
+      // 오류가 발생해도 로컬 데이터는 삭제
+      try {
+        await StorageHelper.clearAuthData();
+        print('🧹 오류 발생했지만 로컬 데이터 삭제 완료');
+      } catch (cleanupError) {
+        print('❌ 로컬 데이터 삭제도 실패: $cleanupError');
+      }
+
       return ApiResponse.success(true, message: '로그아웃되었습니다.');
     }
   }
