@@ -9,7 +9,10 @@ import '../../core/utils/storage_helper.dart';
 class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
-  ApiService._internal();
+  ApiService._internal() {
+    init();
+  }
+
 
   late Dio _dio;
 

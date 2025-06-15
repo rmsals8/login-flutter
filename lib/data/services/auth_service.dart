@@ -6,6 +6,7 @@ import '../models/hello_response.dart';
 import '../../core/constants/api_constants.dart';
 import 'api_service.dart';
 import '../../core/utils/storage_helper.dart';
+import 'dart:convert';
 class AuthService {
   final ApiService _apiService = ApiService();
 
@@ -142,15 +143,25 @@ class AuthService {
   // 캡차 이미지
   Future<ApiResponse<String>> getCaptchaImage() async {
     try {
+      print('📸 캡차 이미지 요청 시작');
       final response = await _apiService.getCaptchaImage();
+
       if (response.statusCode == 200 && response.data != null) {
+        print('✅ 캡차 이미지 데이터 받음');
         final bytes = response.data as List<int>;
-        final base64String = 'data:image/jpeg;base64,' + String.fromCharCodes(bytes);
+        print('📏 바이트 길이: ${bytes.length}');
+
+        // 🔥 올바른 Base64 변환
+        final base64String = 'data:image/jpeg;base64,' + base64Encode(bytes);
+        print('🔄 Base64 변환 완료');
+
         return ApiResponse.success(base64String);
       } else {
+        print('❌ 캡차 이미지 응답 실패: ${response.statusCode}');
         return ApiResponse.error('캡차 이미지를 불러올 수 없습니다.');
       }
     } catch (e) {
+      print('💥 캡차 이미지 처리 중 오류: $e');
       return ApiResponse.error(_handleError(e));
     }
   }

@@ -27,89 +27,371 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // 🔥 완전히 새로 작성된 로그아웃 처리 메소드
   Future<void> _handleLogout() async {
     print('🚪 대시보드 로그아웃 시작');
-    
-    // 사용자에게 확인 받기
-    final confirmed = await DialogHelper.showConfirmDialog(
-      context,
-      '정말 로그아웃하시겠습니까?\n\n소셜 로그인을 사용하셨다면 해당 플랫폼에서도 로그아웃됩니다.',
-      title: '로그아웃',
-      confirmText: '로그아웃',
-      cancelText: '취소',
+
+    // 🎨 예쁜 확인 다이얼로그 표시
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(maxWidth: 340),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 25,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 🎨 상단 로그아웃 아이콘 영역 (흰색 배경)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F5F5),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFFE0E0E0),
+                            width: 2,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.logout_rounded,
+                          color: Color(0xFF757575),
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        '로그아웃',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF212121),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 🎨 메시지 영역
+                Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    children: [
+                      const Text(
+                        '정말 로그아웃하시겠습니까?',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF212121),
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        '소셜 로그인을 사용하셨다면\n해당 플랫폼에서도 로그아웃됩니다.',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w400,
+                          color: Color(0xFF757575),
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 28),
+
+                      // 🎨 버튼 영역
+                      Row(
+                        children: [
+                          // 취소 버튼
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              style: TextButton.styleFrom(
+                                backgroundColor: const Color(0xFFF5F5F5),
+                                foregroundColor: const Color(0xFF616161),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: const BorderSide(
+                                    color: Color(0xFFE0E0E0),
+                                    width: 1,
+                                  ),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: const Text(
+                                '취소',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          // 로그아웃 버튼
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF424242),
+                                foregroundColor: AppColors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                                shadowColor: Colors.transparent,
+                              ),
+                              child: const Text(
+                                '로그아웃',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
 
-    if (!confirmed) {
+    if (confirmed != true) {
       print('로그아웃 취소됨');
       return;
     }
 
     if (!mounted) return;
 
-    // 로딩 상태 시작
-    setState(() {
-      _isLoading = true;
-    });
+    // 🎨 로딩 다이얼로그 표시
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.7),
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false, // 뒤로 가기 방지
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxWidth: 280),
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 25,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 회전하는 로딩 아이콘
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F8FF),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFE3F2FD),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Center(
+                      child: SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF3182CE)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    '로그아웃 중...',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF212121),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '잠시만 기다려주세요',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF757575),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
 
     try {
       print('🔄 로그아웃 처리 시작');
-      
+
       final authProvider = context.read<AuthProvider>();
       final loginProvider = context.read<LoginProvider>();
-      
+
       // 🔥 AuthProvider에서 완전 로그아웃 처리 (소셜 로그아웃 포함)
       await authProvider.logout();
       print('✅ AuthProvider 완전 로그아웃 완료');
-      
+
       // 🔥 LoginProvider 초기화
       loginProvider.onLogout();
       print('✅ LoginProvider 초기화 완료');
-      
-      // 성공 메시지 표시 (짧게)
+
+      // 로딩 다이얼로그 닫기
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // 🎨 성공 스낵바 표시 (예쁘게)
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              '로그아웃되었습니다',
-              style: TextStyle(color: AppColors.white),
+          SnackBar(
+            content: Row(
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF38A169),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  '로그아웃되었습니다',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-            backgroundColor: AppColors.success,
-            duration: Duration(seconds: 1),
+            backgroundColor: const Color(0xFF38A169),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
-      
+
       // 잠시 대기 후 로그인 화면으로 이동
-      await Future.delayed(const Duration(milliseconds: 500));
-      
+      await Future.delayed(const Duration(milliseconds: 800));
+
       if (mounted) {
         context.go('/login');
         print('🚀 로그인 화면으로 이동 완료');
       }
-      
+
     } catch (error) {
       print('❌ 로그아웃 처리 중 오류: $error');
-      
-      // 에러가 발생해도 로그인 화면으로 이동
+
+      // 로딩 다이얼로그 닫기
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      // 🎨 에러 스낵바 표시 (예쁘게)
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text(
-              '로그아웃 중 오류가 발생했지만 로그아웃되었습니다',
-              style: TextStyle(color: AppColors.white),
+            content: Row(
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE53E3E),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.warning,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    '로그아웃 중 오류가 발생했지만 로그아웃되었습니다',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 2),
+            backgroundColor: const Color(0xFFE53E3E),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
           ),
         );
-        
+
         // 에러가 발생해도 로그인 화면으로 이동
+        await Future.delayed(const Duration(milliseconds: 1000));
         context.go('/login');
-      }
-    } finally {
-      // 로딩 상태 종료
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
       }
     }
   }
@@ -375,94 +657,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 // 🔥 간단하고 강력한 로그아웃 메소드 (모든 데이터 삭제)
-Future<void> _handleSimpleLogout() async {
-  print('🚪 간단 로그아웃 시작');
-  
-  // 사용자에게 확인 받기
-  final confirmed = await DialogHelper.showConfirmDialog(
-    context,
-    '로그아웃하시겠습니까?\n\n모든 로그인 데이터가 삭제됩니다.',
-    title: '로그아웃',
-    confirmText: '로그아웃',
-    cancelText: '취소',
-  );
 
-  if (!confirmed) {
-    print('로그아웃 취소됨');
-    return;
-  }
-
-  if (!mounted) return;
-
-  // 로딩 상태 시작
-  setState(() {
-    _isLoading = true;
-  });
-
-  try {
-    print('🔄 로그아웃 처리 시작');
-    
-    final authProvider = context.read<AuthProvider>();
-    final loginProvider = context.read<LoginProvider>();
-    
-    // 🔥 AuthProvider에서 완전 로그아웃 처리 (모든 데이터 삭제)
-    await authProvider.logout();
-    print('✅ AuthProvider 완전 로그아웃 완료');
-    
-    // 🔥 LoginProvider 초기화
-    loginProvider.onLogout();
-    print('✅ LoginProvider 초기화 완료');
-    
-    // 성공 메시지 표시 (짧게)
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            '로그아웃되었습니다',
-            style: TextStyle(color: AppColors.white),
-          ),
-          backgroundColor: AppColors.success,
-          duration: Duration(seconds: 1),
-        ),
-      );
-    }
-    
-    // 잠시 대기 후 로그인 화면으로 이동
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    if (mounted) {
-      context.go('/login');
-      print('🚀 로그인 화면으로 이동 완료');
-    }
-    
-  } catch (error) {
-    print('❌ 로그아웃 처리 중 오류: $error');
-    
-    // 에러가 발생해도 로그인 화면으로 이동
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-            '로그아웃 중 오류가 발생했지만 로그아웃되었습니다',
-            style: TextStyle(color: AppColors.white),
-          ),
-          backgroundColor: AppColors.error,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      
-      // 에러가 발생해도 로그인 화면으로 이동
-      context.go('/login');
-    }
-  } finally {
-    // 로딩 상태 종료
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-}
 // 🔥 로그아웃 버튼만 남기고 단순화 (연결 끊기 버튼 제거)
 Widget _buildLogoutButtons() {
   return Consumer<AuthProvider>(
@@ -473,7 +668,7 @@ Widget _buildLogoutButtons() {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _isLoading ? null : _handleSimpleLogout,
+              onPressed: _isLoading ? null : _handleLogout,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFFEBEE),
                 foregroundColor: const Color(0xFFE03131),
@@ -483,7 +678,7 @@ Widget _buildLogoutButtons() {
                 ),
                 elevation: 0,
               ),
-              child: _isLoading 
+              child: _isLoading
                 ? const SizedBox(
                     height: 20,
                     width: 20,
@@ -508,7 +703,7 @@ Widget _buildLogoutButtons() {
                   ),
             ),
           ),
-          
+
           // 간단한 안내 텍스트
           const SizedBox(height: 12),
           Container(

@@ -1,5 +1,6 @@
 // lib/presentation/screens/signup_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
@@ -127,9 +128,7 @@ class _SignupScreenState extends State<SignupScreen> {
           _buildInputFields(),
           const SizedBox(height: 24),
 
-          // 역할 선택
-          _buildRoleSelection(),
-          const SizedBox(height: 24),
+          // 역할 선택 제거됨 (자동으로 일반 사용자로 설정)
 
           // 회원가입 버튼
           _buildSignupButton(),
@@ -213,7 +212,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 전화번호
+            // 전화번호 (자동 포맷팅 추가)
             _buildInputField(
               label: '전화번호',
               controller: signupProvider.phoneController,
@@ -221,6 +220,7 @@ class _SignupScreenState extends State<SignupScreen> {
               errorText: signupProvider.phoneError.isEmpty ? null : signupProvider.phoneError,
               keyboardType: TextInputType.phone,
               hint: '010-1234-5678',
+              inputFormatters: [PhoneNumberFormatter()], // 전화번호 자동 포맷팅 추가
             ),
             const SizedBox(height: 16),
 
@@ -247,6 +247,7 @@ class _SignupScreenState extends State<SignupScreen> {
     TextInputType keyboardType = TextInputType.text,
     String? hint,
     Widget? suffixIcon,
+    List<TextInputFormatter>? inputFormatters, // 입력 포맷터 추가
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -265,6 +266,7 @@ class _SignupScreenState extends State<SignupScreen> {
           onChanged: onChanged,
           obscureText: obscureText,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters, // 입력 포맷터 적용
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
@@ -296,53 +298,7 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  Widget _buildRoleSelection() {
-    return Consumer<SignupProvider>(
-      builder: (context, signupProvider, child) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '사용자 역할',
-              style: TextStyle(
-                fontSize: AppDimensions.fontSizeMedium,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.inputBorder),
-                borderRadius: BorderRadius.circular(AppDimensions.borderRadius),
-              ),
-              child: Column(
-                children: [
-                  RadioListTile<int>(
-                    title: const Text('일반 사용자'),
-                    subtitle: const Text('기본 사용 권한'),
-                    value: 0,
-                    groupValue: signupProvider.selectedRole,
-                    onChanged: (value) => signupProvider.setRole(value!),
-                    activeColor: AppColors.primary,
-                  ),
-                  Divider(height: 1, color: AppColors.inputBorder),
-                  RadioListTile<int>(
-                    title: const Text('관리자'),
-                    subtitle: const Text('관리자 권한 (승인 필요)'),
-                    value: 1,
-                    groupValue: signupProvider.selectedRole,
-                    onChanged: (value) => signupProvider.setRole(value!),
-                    activeColor: AppColors.primary,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // 역할 선택 메서드 제거됨 (자동으로 일반 사용자로 설정)
 
   Widget _buildSignupButton() {
     return Consumer<SignupProvider>(
@@ -503,5 +459,42 @@ class _SignupScreenState extends State<SignupScreen> {
         });
       }
     }
+  }
+}
+
+// 전화번호 자동 포맷팅 클래스
+class PhoneNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
+    final text = newValue.text;
+
+    // 숫자만 추출
+    final numericOnly = text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    // 길이 제한 (11자리까지)
+    if (numericOnly.length > 11) {
+      return oldValue;
+    }
+
+    String formatted = '';
+
+    if (numericOnly.length <= 3) {
+      // 처음 3자리까지는 그대로
+      formatted = numericOnly;
+    } else if (numericOnly.length <= 7) {
+      // 4-7자리: 010-1234 형태
+      formatted = '${numericOnly.substring(0, 3)}-${numericOnly.substring(3)}';
+    } else {
+      // 8자리 이상: 010-1234-5678 형태
+      formatted = '${numericOnly.substring(0, 3)}-${numericOnly.substring(3, 7)}-${numericOnly.substring(7)}';
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
   }
 }
