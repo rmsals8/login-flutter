@@ -17,6 +17,7 @@ class AppColors {
   static const Color textPrimary = Color(0xFF333333);
   static const Color textSecondary = Color(0xFF666666);
   static const Color divider = Color(0xFFEEEEEE);
+  static const Color disabled = Color(0xFFB5B5B7);
 }
 
 

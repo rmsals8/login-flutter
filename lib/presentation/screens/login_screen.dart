@@ -276,7 +276,7 @@ class _LoginScreenState extends State<LoginScreen> {
           
           // 에러/성공 메시지
           _buildMessages(),
-          
+          _buildSignupButton(),
           // 소셜 로그인
           _buildSocialLogin(),
         ],
@@ -409,7 +409,33 @@ Widget _buildLoginButton() {
       },
     );
   }
-
+  Widget _buildSignupButton() {
+    return Container(
+      width: double.infinity,
+      height: 50,
+      margin: const EdgeInsets.only(top: 16),
+      child: OutlinedButton(
+        onPressed: () {
+          // 회원가입 페이지로 이동
+          context.go('/signup');
+        },
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: AppColors.primary),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: Text(
+          '회원가입',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.primary,
+          ),
+        ),
+      ),
+    );
+  }
 Widget _buildSocialLogin() {
   return Consumer<LoginProvider>(
     builder: (context, loginProvider, child) {
