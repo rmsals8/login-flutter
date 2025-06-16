@@ -1,6 +1,6 @@
 // lib/core/constants/app_strings.dart
 class AppStrings {
-  static const String appName = 'Vue.js - 그냥 배포 테스트';
+  static const String appName = '통합 인증 시스템';
   static const String loginTitle = '로그인 폼';
   static const String username = '아이디';
   static const String password = '비밀번호';

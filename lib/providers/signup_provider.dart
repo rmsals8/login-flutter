@@ -302,90 +302,129 @@ class SignupProvider extends ChangeNotifier {
   }
 
   // 회원가입 처리 메서드
-  Future<bool> signup() async {
-    print('🚀 SignupProvider.signup() 시작');
+// 폼 초기화 메서드 - 회원가입 성공 후 입력 필드들을 비운다
+void clearForm() {
+  print('🧹 회원가입 폼 초기화 시작');
+  
+  // 모든 텍스트 컨트롤러 비우기
+  usernameController.clear();
+  passwordController.clear();
+  confirmPasswordController.clear();
+  nameController.clear();
+  emailController.clear();
+  phoneController.clear();
+  signupCodeController.clear();
+  
+  // 상태 변수들 초기화
+  _selectedRole = 0; // 일반 사용자로 초기화
+  _usernameAvailable = null; // 사용자명 확인 상태 초기화
+  
+  // 모든 에러 메시지 초기화
+  _usernameError = '';
+  _passwordError = '';
+  _confirmPasswordError = '';
+  _nameError = '';
+  _emailError = '';
+  _phoneError = '';
+  _signupCodeError = '';
+  _errorMessage = '';
+  _successMessage = '';
+  
+  // 폼 유효성 상태 초기화
+  _isFormValid = false;
+  
+  print('✅ 회원가입 폼 초기화 완료');
+  notifyListeners();
+}
 
-    if (_isLoading) {
-      print('⚠️ 이미 처리 중입니다');
-      return false;
-    }
+// 회원가입 처리 메서드
+Future<bool> signup() async {
+  print('🚀 SignupProvider.signup() 시작');
 
-    // 최종 유효성 검사
-    validateUsername();
-    validatePassword();
-    validateConfirmPassword();
-    validateName();
-    validateEmail();
-    validatePhone();
-    validateSignupCode();
+  if (_isLoading) {
+    print('⚠️ 이미 처리 중입니다');
+    return false;
+  }
 
-    if (!_isFormValid) {
-      print('❌ 폼 유효성 검사 실패');
-      _errorMessage = '입력 정보를 다시 확인해주세요';
-      notifyListeners();
-      return false;
-    }
+  // 최종 유효성 검사
+  validateUsername();
+  validatePassword();
+  validateConfirmPassword();
+  validateName();
+  validateEmail();
+  validatePhone();
+  validateSignupCode();
 
-    _isLoading = true;
-    _clearMessages();
+  if (!_isFormValid) {
+    print('❌ 폼 유효성 검사 실패');
+    _errorMessage = '입력 정보를 다시 확인해주세요';
     notifyListeners();
+    return false;
+  }
 
-    try {
-      print('📝 회원가입 요청 데이터 생성');
-      final signupRequest = SignupRequest(
-        username: usernameController.text.trim(),
-        password: passwordController.text,
-        name: nameController.text.trim(),
-        email: emailController.text.trim(),
-        phone: phoneController.text.trim(),
-        role: _selectedRole,
-        signupCode: signupCodeController.text.trim(),
-      );
+  _isLoading = true;
+  _clearMessages();
+  notifyListeners();
 
-      print('📦 요청 데이터: ${signupRequest.toJson()}');
+  try {
+    print('📝 회원가입 요청 데이터 생성');
+    final signupRequest = SignupRequest(
+      username: usernameController.text.trim(),
+      password: passwordController.text,
+      name: nameController.text.trim(),
+      email: emailController.text.trim(),
+      phone: phoneController.text.trim(),
+      role: _selectedRole,
+      signupCode: signupCodeController.text.trim(),
+    );
 
-      final response = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}/api/users'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(signupRequest.toJson()),
-      );
+    print('📦 요청 데이터: ${signupRequest.toJson()}');
 
-      print('📡 서버 응답: ${response.statusCode}');
-      print('📦 응답 내용: ${response.body}');
+    final response = await http.post(
+      Uri.parse('${ApiConstants.baseUrl}/api/users'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(signupRequest.toJson()),
+    );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+    print('📡 서버 응답: ${response.statusCode}');
+    print('📦 응답 내용: ${response.body}');
 
-        if (data['success'] == true) {
-          print('✅ 회원가입 성공!');
-          _successMessage = '회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.';
-          _errorMessage = '';
-          notifyListeners();
-          return true;
-        } else {
-          print('❌ 회원가입 실패: ${data['message']}');
-          _errorMessage = data['message'] ?? '회원가입에 실패했습니다';
-          notifyListeners();
-          return false;
-        }
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['success'] == true) {
+        print('✅ 회원가입 성공!');
+        _successMessage = '회원가입이 완료되었습니다. 로그인 페이지로 이동합니다.';
+        _errorMessage = '';
+        
+        // 🔥 회원가입 성공 후 폼 초기화
+        clearForm();
+        
+        notifyListeners();
+        return true;
       } else {
-        print('❌ 서버 오류: ${response.statusCode}');
-        final data = json.decode(response.body);
-        _errorMessage = data['message'] ?? '서버 오류가 발생했습니다';
+        print('❌ 회원가입 실패: ${data['message']}');
+        _errorMessage = data['message'] ?? '회원가입에 실패했습니다';
         notifyListeners();
         return false;
       }
-    } catch (e) {
-      print('❌ 회원가입 처리 중 오류: $e');
-      _errorMessage = '네트워크 오류가 발생했습니다. 다시 시도해주세요.';
+    } else {
+      print('❌ 서버 오류: ${response.statusCode}');
+      final data = json.decode(response.body);
+      _errorMessage = data['message'] ?? '서버 오류가 발생했습니다';
       notifyListeners();
       return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
+  } catch (e) {
+    print('❌ 회원가입 처리 중 오류: $e');
+    _errorMessage = '네트워크 오류가 발생했습니다. 다시 시도해주세요.';
+    notifyListeners();
+    return false;
+  } finally {
+    _isLoading = false;
+    notifyListeners();
   }
-
+}
   // 메모리 정리 메서드
   @override
   void dispose() {

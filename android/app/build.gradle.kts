@@ -76,7 +76,7 @@ android {
         val naverClientSecret = getEnvVariable("NAVER_CLIENT_SECRET") 
         val naverClientName = getEnvVariable("NAVER_CLIENT_NAME")
         val kakaoAppKey = getEnvVariable("KAKAO_NATIVE_APP_KEY")
-      
+        val serverDomain = getEnvVariable("SERVER_DOMAIN")
         // Validate loaded values (show only length for security)
         println("Loaded environment variables:")
         println("   - NAVER_CLIENT_ID: ${naverClientId.length} characters")
@@ -97,7 +97,7 @@ android {
         manifestPlaceholders["naverClientSecret"] = naverClientSecret
         manifestPlaceholders["naverClientName"] = naverClientName
         manifestPlaceholders["kakaoAppKey"] = kakaoAppKey
-      
+        manifestPlaceholders["serverDomain"] = serverDomain 
         println("All environment variables successfully set in manifestPlaceholders")
     }
 

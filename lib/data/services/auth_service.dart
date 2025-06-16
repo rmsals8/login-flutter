@@ -1,4 +1,6 @@
 // lib/data/services/auth_service.dart
+import 'package:dio/dio.dart';
+
 import '../models/login_request.dart';
 import '../models/login_response.dart';
 import '../models/api_response.dart';
@@ -141,31 +143,64 @@ class AuthService {
   }
 
   // 캡차 이미지
-  Future<ApiResponse<String>> getCaptchaImage() async {
-    try {
-      print('📸 캡차 이미지 요청 시작');
-      final response = await _apiService.getCaptchaImage();
-
-      if (response.statusCode == 200 && response.data != null) {
-        print('✅ 캡차 이미지 데이터 받음');
+// 캐차 이미지
+Future<ApiResponse<String>> getCaptchaImage() async {
+  try {
+    print('📸 캡차 이미지 요청 시작');
+    
+    // 🔥 타임스탬프를 쿼리 파라미터에 추가해서 캐시를 방지한다
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    
+    final response = await _apiService.get(
+      ApiConstants.captchaImageEndpoint,
+      queryParameters: {
+        'timestamp': timestamp,
+        'v': '2.0', // 버전 파라미터도 추가한다
+      },
+      options: Options(
+        responseType: ResponseType.bytes,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate', // 🔥 캐시 완전 방지
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+        // 🔥 타임아웃 설정은 Options에서 제거 (BaseOptions에서 이미 설정됨)
+      ),
+    );
+    
+    print('✅ 캡차 이미지 데이터 받음');
+    
+    if (response.statusCode == 200 && response.data != null) {
+      try {
         final bytes = response.data as List<int>;
         print('📏 바이트 길이: ${bytes.length}');
-
-        // 🔥 올바른 Base64 변환
-        final base64String = 'data:image/jpeg;base64,' + base64Encode(bytes);
+        
+        // 🔥 이미지 데이터가 너무 작으면 오류로 처리한다
+        if (bytes.length < 100) {
+          throw Exception('받은 이미지 데이터가 너무 작습니다 (${bytes.length} bytes)');
+        }
+        
+        // 🔥 base64 인코딩을 더 안전하게 처리한다
+        print('🔄 Base64 변환 시작');
+        final base64Bytes = base64Encode(bytes);
+        final base64String = 'data:image/jpeg;base64,$base64Bytes';
         print('🔄 Base64 변환 완료');
-
+        print('📏 Base64 문자열 길이: ${base64String.length}');
+        
         return ApiResponse.success(base64String);
-      } else {
-        print('❌ 캡차 이미지 응답 실패: ${response.statusCode}');
-        return ApiResponse.error('캡차 이미지를 불러올 수 없습니다.');
+      } catch (e) {
+        print('❌ 이미지 데이터 처리 실패: $e');
+        return ApiResponse.error('이미지 데이터 처리 중 오류가 발생했습니다: $e');
       }
-    } catch (e) {
-      print('💥 캡차 이미지 처리 중 오류: $e');
-      return ApiResponse.error(_handleError(e));
+    } else {
+      print('❌ 캡차 API 응답 실패: ${response.statusCode}');
+      return ApiResponse.error('캡차 이미지를 불러올 수 없습니다 (${response.statusCode})');
     }
+  } catch (e) {
+    print('❌ 캡차 이미지 API 호출 실패: $e');
+    return ApiResponse.error(_handleError(e));
   }
-
+}
   // 에러 처리
   String _handleError(dynamic error) {
     print('🔍 AuthService 에러 분석: $error');

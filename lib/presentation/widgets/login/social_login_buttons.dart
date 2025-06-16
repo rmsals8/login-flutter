@@ -36,21 +36,21 @@ class SocialLoginButtons extends StatelessWidget {
             // 🔥 카카오가 비활성화되어야 할 때 null 전달
             onPressed: isKakaoDisabled ? null : onKakaoLogin,
             style: ElevatedButton.styleFrom(
-              // 🔥 비활성화될 때 색상 변경
+              // 🔥 색깔을 원래 노란색 또는 옅은 노란색으로 설정
               backgroundColor: isKakaoDisabled 
-                  ? const Color(0xFFE0E0E0) 
-                  : const Color(0xFFFFE812),
+                  ? const Color(0xFFFFF4A3) // 옅은 노란색 (원래 색깔의 연한 버전)
+                  : const Color(0xFFFFE812), // 원래 노란색
               foregroundColor: isKakaoDisabled 
-                  ? const Color(0xFF9E9E9E) 
-                  : const Color(0xFF3C1E1E),
+                  ? const Color(0xFF6B5B00) // 옅은 갈색 텍스트
+                  : const Color(0xFF3C1E1E), // 원래 갈색 텍스트
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(6),
               ),
               padding: EdgeInsets.zero,
-              // 🔥 비활성화 상태 스타일
-              disabledBackgroundColor: const Color(0xFFE0E0E0),
-              disabledForegroundColor: const Color(0xFF9E9E9E),
+              // 🔥 비활성화 상태 스타일도 같은 색깔로 설정
+              disabledBackgroundColor: const Color(0xFFFFF4A3), // 옅은 노란색
+              disabledForegroundColor: const Color(0xFF6B5B00), // 옅은 갈색
             ),
             child: Container(
               width: double.infinity,
@@ -65,8 +65,8 @@ class SocialLoginButtons extends StatelessWidget {
                     // 카카오 이미지
                     Center(
                       child: Opacity(
-                        // 🔥 비활성화될 때 투명도 조절
-                        opacity: isKakaoDisabled ? 0.5 : 1.0,
+                        // 🔥 비활성화될 때 투명도를 조금만 낮춤 (0.7로 설정)
+                        opacity: isKakaoDisabled ? 0.7 : 1.0,
                         child: Image.asset(
                           'assets/images/kakao_login_large_wide.png',
                           width: double.infinity,
@@ -87,25 +87,25 @@ class SocialLoginButtons extends StatelessWidget {
                           ),
                         ),
                       ),
-                    // 🔥 다른 로그인 진행 중일 때 표시
-                    if (isNaverLoading || isGeneralLoading)
-                      Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            '대기 중',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
+                    // 🔥 "대기 중" 텍스트 완전 제거 - 이 부분을 주석처리함
+                    // if (isNaverLoading || isGeneralLoading)
+                    //   Center(
+                    //     child: Container(
+                    //       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    //       decoration: BoxDecoration(
+                    //         color: Colors.black.withOpacity(0.7),
+                    //         borderRadius: BorderRadius.circular(4),
+                    //       ),
+                    //       child: const Text(
+                    //         '대기 중',
+                    //         style: TextStyle(
+                    //           color: Colors.white,
+                    //           fontSize: 12,
+                    //           fontWeight: FontWeight.w500,
+                    //         ),
+                    //       ),
+                    //     ),
+                    //   ),
                   ],
                 ),
               ),
@@ -122,10 +122,10 @@ class SocialLoginButtons extends StatelessWidget {
             width: double.infinity,
             height: 45,
             decoration: BoxDecoration(
-              // 🔥 비활성화될 때 색상 변경
+              // 🔥 색깔을 원래 초록색 또는 옅은 초록색으로 설정
               color: isNaverDisabled 
-                  ? const Color(0xFFE0E0E0) 
-                  : const Color(0xFF03C75A),
+                  ? const Color(0xFF7DD3A0) // 옅은 초록색 (원래 색깔의 연한 버전)
+                  : const Color(0xFF03C75A), // 원래 초록색
               borderRadius: BorderRadius.circular(6),
             ),
             child: Stack(
@@ -142,30 +142,30 @@ class SocialLoginButtons extends StatelessWidget {
                       ),
                     ),
                   )
-                // 🔥 다른 로그인 진행 중일 때 표시
-                else if (isKakaoLoading || isGeneralLoading)
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        '대기 중',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  )
+                // 🔥 "대기 중" 텍스트 완전 제거 - 이 부분을 주석처리함
+                // else if (isKakaoLoading || isGeneralLoading)
+                //   Center(
+                //     child: Container(
+                //       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                //       decoration: BoxDecoration(
+                //         color: Colors.black.withOpacity(0.7),
+                //         borderRadius: BorderRadius.circular(4),
+                //       ),
+                //       child: const Text(
+                //         '대기 중',
+                //         style: TextStyle(
+                //           color: Colors.white,
+                //           fontSize: 12,
+                //           fontWeight: FontWeight.w500,
+                //         ),
+                //       ),
+                //     ),
+                //   )
                 // 🔥 일반 상태일 때 네이버 버튼 내용
                 else
                   Opacity(
-                    // 🔥 비활성화될 때 투명도 조절
-                    opacity: isNaverDisabled ? 0.5 : 1.0,
+                    // 🔥 비활성화될 때 투명도를 조금만 낮춤 (0.7로 설정)
+                    opacity: isNaverDisabled ? 0.7 : 1.0,
                     child: Row(
                       children: [
                         const SizedBox(width: 12),
@@ -183,9 +183,10 @@ class SocialLoginButtons extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w900,
+                                // 🔥 N 로고 색깔도 비활성화 시 조금 옅게
                                 color: isNaverDisabled 
-                                    ? const Color(0xFF9E9E9E)
-                                    : const Color(0xFF03C75A),
+                                    ? const Color(0xFF7DD3A0) // 옅은 초록색
+                                    : const Color(0xFF03C75A), // 원래 초록색
                               ),
                             ),
                           ),
@@ -197,9 +198,10 @@ class SocialLoginButtons extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
+                                // 🔥 텍스트 색깔도 비활성화 시 조금 옅게
                                 color: isNaverDisabled 
-                                    ? const Color(0xFF9E9E9E)
-                                    : AppColors.white,
+                                    ? const Color(0xFFE8F5E8) // 옅은 흰색
+                                    : AppColors.white, // 원래 흰색
                               ),
                             ),
                           ),

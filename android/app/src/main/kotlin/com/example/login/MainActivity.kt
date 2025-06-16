@@ -10,13 +10,17 @@ class MainActivity : FlutterFragmentActivity() {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // 🔥 간단하고 확실한 키 해시 출력
-        Log.e("MAIN_ACTIVITY", "=== MainActivity onCreate 시작! ===")
-        System.out.println("🚨 MainActivity onCreate 시작!")
+        // 🔥 키 해시 출력을 주석 처리했다
+        // 나중에 필요하면 주석을 풀어서 사용할 수 있다
         
-        getKeyHash()
+        // Log.e("MAIN_ACTIVITY", "=== MainActivity onCreate 시작! ===")
+        // System.out.println("🚨 MainActivity onCreate 시작!")
+        
+        // getKeyHash()
     }
     
+    // 🔥 키 해시 메소드도 주석 처리했다
+    /*
     @Suppress("DEPRECATION")
     private fun getKeyHash() {
         try {
@@ -67,4 +71,5 @@ class MainActivity : FlutterFragmentActivity() {
             e.printStackTrace()
         }
     }
+    */
 }

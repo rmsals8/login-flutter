@@ -208,14 +208,14 @@ class _LoginScreenState extends State<LoginScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          Text(
-            '현재 API URL: ${ApiConstants.baseUrl}',
-            style: TextStyle(
-              fontSize: AppDimensions.fontSizeMedium,
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
+          // Text(
+          //   '현재 API URL: ${ApiConstants.baseUrl}',
+          //   style: TextStyle(
+          //     fontSize: AppDimensions.fontSizeMedium,
+          //     color: AppColors.textSecondary,
+          //   ),
+          //   textAlign: TextAlign.center,
+          // ),
         ],
       ),
     );
